@@ -7,28 +7,31 @@
 #include <cstring>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb/stb_image_resize.h>
 
-constexpr int num_ch = 4;
-int id = 0;
+int image_id_counter = 0;
 
-Image::Image() : w(0), h(0), image(nullptr), id_(::id++), initialized(false)
+Image::Image() : w(0), h(0), ch(4), image(nullptr), id_(image_id_counter++), initialized(false)
 {
 
 }
 
-Image::Image(int w, int h, int ch) : w(w), h(h), image(nullptr), id_(::id++), initialized(false)
+Image::Image(int w, int h, int ch) : w(w), h(h), ch(ch), image(nullptr), id_(image_id_counter++), initialized(false)
 {
-    assert(ch == num_ch && "Unsupported: channels != 4");
-    image.reset(new CComp[w * h * num_ch]);
+    assert((ch == 3 || ch == 4) && "Unsupported numer of channels");
+    image.reset(new CComp[w * h * ch]);
     initialized = true;
     for (int y = 0; y < h; y++)
     {
         for (int x = 0; x < w; x++)
         {
-            image[at(x, y) + 0] = 0;
-            image[at(x, y) + 1] = 0;
-            image[at(x, y) + 2] = 0;
-            image[at(x, y) + 3] = 0;
+            for (int i = 0; i < ch; i++)
+            {
+                image[at(x, y) + i] = 0;
+            }
         }
     }
 }
@@ -39,9 +42,9 @@ unsigned int Image::at(int x, int y) const
 
     if (x < 0) { x = 0; }
     if (y < 0) { y = 0; }
-    if (x >= w) { x = w; }
-    if (y >= h) { y = h; }
-    return (y * w + x) * num_ch;
+    if (x >= w) { x = w - 1; }
+    if (y >= h) { y = h - 1; }
+    return (y * w + x) * ch;
 }
 
 void Image::set_rgb(int x, int y, CComp r, CComp g, CComp b)
@@ -51,7 +54,11 @@ void Image::set_rgb(int x, int y, CComp r, CComp g, CComp b)
     image[at(x, y) + 0] = r;
     image[at(x, y) + 1] = g;
     image[at(x, y) + 2] = b;
-    image[at(x, y) + 3] = 255;
+
+    if (ch == 4)
+    {
+        image[at(x, y) + 3] = 255;
+    }
 }
 
 void Image::set_rgb(int x, int y, const RGB &rgb)
@@ -76,8 +83,9 @@ Image::Image(const Image& other)
 {
     w = other.w;
     h = other.h;
+    ch = other.ch;
     initialized = other.initialized;
-    std::memcpy(image.get(), other.image.get(), sizeof(CComp) * w * h * num_ch);
+    std::memcpy(image.get(), other.image.get(), sizeof(CComp) * w * h * ch);
 }
 
 bool Image::save(const std::string &dest) const
@@ -85,7 +93,17 @@ bool Image::save(const std::string &dest) const
     assert(initialized && "Image is not initialized");
 
     stbi_flip_vertically_on_write(true);
-    int res = stbi_write_png(dest.c_str(), w, h, num_ch, image.get(), w * num_ch);
+    int res = stbi_write_png(dest.c_str(), w, h, ch, image.get(), w * ch);
+
+    return res != 0;
+}
+
+bool Image::save_compressed(const std::string &dest, int quality) const
+{
+    assert(initialized && "Image is not initialized");
+
+    stbi_flip_vertically_on_write(true);
+    int res = stbi_write_jpg(dest.c_str(), w, h, ch, image.get(), quality);
 
     return res != 0;
 }
@@ -119,4 +137,39 @@ std::shared_ptr<Image> generate_gradient_image(int w, int h)
 int Image::id() const
 {
     return id_;
+}
+
+bool Image::load(const std::string &path)
+{
+    stbi_set_flip_vertically_on_load(true);
+
+    unsigned char *data = stbi_load(path.c_str(), &w, &h, &ch, 0);
+    assert((ch == 3 || ch == 4) && "Unsupported number of channels");
+
+    if (!data)
+    {
+        return false;
+    }
+
+    image.reset(data);
+    initialized = true;
+
+    return true;
+}
+
+bool Image::resize(int nx, int ny)
+{
+    // 1. Allocate needed amount of memory
+    std::unique_ptr<unsigned char[]> ptr(new unsigned char[nx * ny * ch]);
+    int ok = stbir_resize_uint8(image.get(), w, h, 0, ptr.get(), nx, ny, 0, ch);
+
+    if (ok == 0)
+    {
+        return false;
+    }
+
+    w = nx;
+    h = ny;
+    image = std::move(ptr);
+    return true;
 }

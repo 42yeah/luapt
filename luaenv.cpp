@@ -13,11 +13,7 @@ std::shared_ptr<Lua> lua_inst = nullptr;
 Lua::Lua() : lua_ready(false), l(nullptr)
 {
     l = luaL_newstate();
-    luaopen_base(l);
-    luaopen_table(l);
-    luaopen_io(l);
-    luaopen_string(l);
-    luaopen_math(l);
+    luaL_openlibs(l);
     register_funcs();
     if (l)
     {

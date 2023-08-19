@@ -1,9 +1,16 @@
 #include <iostream>
 #include "image.h"
 #include "luaenv.h"
+#include "model.h"
 
 int main(int argc, char **argv)
 {
+    Model model;
+    if (!model.load("suzanne.obj"))
+    {
+        std::cerr << model.get_load_errors() << std::endl << model.get_load_warnings() << std::endl;
+    }
+
     std::string filename;
     std::string prev;
     std::shared_ptr<Lua> lua = Lua::inst();

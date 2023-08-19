@@ -27,11 +27,23 @@ public:
 
     Image(int w, int h, int ch);
 
+    /**
+     * Load image from file.
+     * Returns false upon failure.
+     */
+    bool load(const std::string &path);
+
     unsigned int at(int x, int y) const;
     void set_rgb(int x, int y, CComp r, CComp g, CComp b);
     void set_rgb(int x, int y, const RGB &rgb);
     RGB get_rgb(int x, int y) const;
     bool save(const std::string &dest) const;
+    bool save_compressed(const std::string &dest, int quality) const;
+
+    /**
+     * Resize the image using stb_image_resize.
+     */
+    bool resize(int nx, int ny);
 
     /**
      * Copy constructor
@@ -47,7 +59,7 @@ public:
 
     int id() const;
 
-    int w, h;
+    int w, h, ch;
 
 private:
     std::unique_ptr<CComp[]> image;
