@@ -5,7 +5,7 @@ Image = {
     w = 0,
     h = 0,
     __gc = function()
-        if w ~= 0 and h ~= 0 then
+        if self.w ~= 0 and self.h ~= 0 then
             free_image(self.handle)
         end
     end

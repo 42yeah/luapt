@@ -96,3 +96,18 @@ std::string Model::get_load_errors() const
 {
     return load_errors;
 }
+
+const Triangle &Model::get_triangle(int index) const
+{
+    assert(initialized && "Model is not initialized yet.");
+    assert((index >= 0 || index < tri.size()) && "Triangle index out of bound");
+
+    return tri[index];
+}
+
+const std::vector<Triangle> &Model::get_all_triangles() const
+{
+    assert(initialized && "Model is not initialized yet.");
+
+    return tri;
+}

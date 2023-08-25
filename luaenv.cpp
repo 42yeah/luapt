@@ -65,6 +65,16 @@ void Lua::report_error(const std::string &msg)
     std::cout << "ERROR: " << msg << std::endl;
 }
 
+const std::vector<std::shared_ptr<Image> > &Lua::get_images() const
+{
+    return images;
+}
+
+const std::vector<std::shared_ptr<Model> > &Lua::get_models() const
+{
+    return models;
+}
+
 Lua::~Lua()
 {
     if (lua_ready && l)
@@ -181,6 +191,122 @@ int Lua::free_image(lua_State *l)
     return 0;
 }
 
+int Lua::make_model(lua_State *l)
+{
+    const char *path = lua_tostring(l, 1);
+
+    std::shared_ptr<Model> model = std::make_shared<Model>();
+    if (!model->load(path))
+    {
+        luaL_error(l, "Cannot load model: %s", model->get_load_errors().c_str());
+        return 0;
+    }
+
+    std::string warnings = model->get_load_warnings();
+    if (!warnings.empty())
+    {
+        std::cerr << "WARNING! " << warnings << std::endl;
+    }
+
+    inst()->models.push_back(model);
+    lua_pushinteger(l, model->id());
+    return 1;
+}
+
+int Lua::model_tri_count(lua_State *l)
+{
+    int id = lua_tointeger(l, 1);
+    auto it = std::find_if(inst()->models.begin(), inst()->models.end(), [&](const std::shared_ptr<Model> &model)
+        {
+            return model->id() == id;
+        }
+    );
+
+    // Check if the model exists.
+    if (it == inst()->models.end())
+    {
+        luaL_error(l, "Model handle not found: %d.", id);
+        return 0;
+    }
+
+    lua_pushinteger(l, (*it)->get_num_tris());
+    return 1;
+}
+
+int Lua::model_get_tri(lua_State *l)
+{
+    int id = lua_tointeger(l, 1);
+    int index = lua_tointeger(l, 2);
+
+    auto it = std::find_if(inst()->models.begin(), inst()->models.end(), [&](const std::shared_ptr<Model> &model)
+        {
+            return model->id() == id;
+        }
+    );
+    if (it == inst()->models.end())
+    {
+        luaL_error(l, "Model handle not found: %d.", id);
+        return 0;
+    }
+
+    const Triangle &tri = (*it)->get_triangle(index);
+    if (index < 0 || index >= (*it)->get_num_tris())
+    {
+        luaL_error(l, "Triangle index out of bounds: %d.", index);
+        return 0;
+    }
+
+    lua_pushnumber(l, tri.a.position.x);
+    lua_pushnumber(l, tri.a.position.y);
+    lua_pushnumber(l, tri.a.position.z);
+    lua_pushnumber(l, tri.a.normal.x);
+    lua_pushnumber(l, tri.a.normal.y);
+    lua_pushnumber(l, tri.a.normal.z);
+    lua_pushnumber(l, tri.a.tex_coord.x);
+    lua_pushnumber(l, tri.a.tex_coord.y);
+
+    lua_pushnumber(l, tri.b.position.x);
+    lua_pushnumber(l, tri.b.position.y);
+    lua_pushnumber(l, tri.b.position.z);
+    lua_pushnumber(l, tri.b.normal.x);
+    lua_pushnumber(l, tri.b.normal.y);
+    lua_pushnumber(l, tri.b.normal.z);
+    lua_pushnumber(l, tri.b.tex_coord.x);
+    lua_pushnumber(l, tri.b.tex_coord.y);
+
+    lua_pushnumber(l, tri.c.position.x);
+    lua_pushnumber(l, tri.c.position.y);
+    lua_pushnumber(l, tri.c.position.z);
+    lua_pushnumber(l, tri.c.normal.x);
+    lua_pushnumber(l, tri.c.normal.y);
+    lua_pushnumber(l, tri.c.normal.z);
+    lua_pushnumber(l, tri.c.tex_coord.x);
+    lua_pushnumber(l, tri.c.tex_coord.y);
+
+    return 24;
+}
+
+int Lua::free_model(lua_State *l)
+{
+    int id = lua_tointeger(l, 1);
+
+    auto it = std::find_if(inst()->models.begin(), inst()->models.end(), [&](const std::shared_ptr<Model> &model)
+        {
+            return model->id() == id;
+        }
+    );
+
+    // Check if the model exists.
+    if (it == inst()->models.end())
+    {
+        luaL_error(l, "Model handle not found: %d.", id);
+        return 0;
+    }
+
+    inst()->models.erase(it);
+    return 0;
+}
+
 void Lua::register_funcs()
 {
     lua_register(l, "generate_test_gradient_image", generate_test_gradient_image);
@@ -188,4 +314,9 @@ void Lua::register_funcs()
     lua_register(l, "set_pixel", Lua::set_pixel);
     lua_register(l, "save_image", Lua::save_image);
     lua_register(l, "free_image", Lua::free_image);
+
+    lua_register(l, "make_model", Lua::make_model);
+    lua_register(l, "free_model", Lua::free_model);
+    lua_register(l, "model_tri_count", Lua::model_tri_count);
+    lua_register(l, "model_get_tri", Lua::model_get_tri);
 }

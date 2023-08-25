@@ -11,6 +11,10 @@ function Vec4:make()
     local ret = {}
     setmetatable(ret, self)
     self.__index = self
+    ret.x = 0
+    ret.y = 0
+    ret.z = 0
+    ret.w = 1
     return ret
 end
 
@@ -49,7 +53,7 @@ end
 
 -- Crossing a function only takes the first
 function Vec4:cross(other)
-    return Vec4:new(self.y * other.z - self.z * other.y, self.x * other.z - self.z * other.x, self.x * other.y - self.y * other.x, 1.0)
+    return Vec4:new(self.y * other.z - self.z * other.y, self.z * other.x - self.x * other.z, self.x * other.y - self.y * other.x, 1.0)
 end
 
 function Vec4:len3()

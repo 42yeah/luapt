@@ -13,7 +13,8 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include <image.h>
+#include "image.h"
+#include "model.h"
 
 /**
  * The Lua interface. Responsible for loading in scripts and executing them.
@@ -38,12 +39,23 @@ public:
     void report_error(const std::string &msg);
     void register_funcs();
 
+    const std::vector<std::shared_ptr<Image> > &get_images() const;
+    const std::vector<std::shared_ptr<Model> > &get_models() const;
+
     std::vector<std::string> err_log;
 
+    // Images
     static int make_image(lua_State *l);
     static int set_pixel(lua_State *l);
     static int save_image(lua_State *l);
     static int free_image(lua_State *l);
+
+    // Models
+    static int make_model(lua_State *l);
+    static int model_tri_count(lua_State *l);
+    static int model_get_tri(lua_State *l);
+    static int free_model(lua_State *l);
+
     static std::shared_ptr<Lua> inst();
 
 private:
@@ -56,6 +68,7 @@ private:
     bool lua_ready;
     lua_State *l;
     std::vector<std::shared_ptr<Image> > images;
+    std::vector<std::shared_ptr<Model> > models;
 };
 
 #endif // LUA_H

@@ -1,36 +1,44 @@
 #include <iostream>
-#include "image.h"
-#include "luaenv.h"
-#include "model.h"
+#include <string>
+#include <cassert>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include "app.h"
 
-int main(int argc, char **argv)
+#define WINDOW_TITLE "LuaPT User Interface"
+
+constexpr int width = 1280, height = 720;
+
+/**
+ * Purpose of main:
+ * The purpose of the main() function is to start up a window, then move it to App(), which manages everything, including
+ * the UI, and the Lua environment.
+ */
+int main()
 {
-    Model model;
-    if (!model.load("suzanne.obj"))
+    assert(glfwInit() == GLFW_TRUE && "Cannot initialize GLFW");
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    GLFWwindow *window = glfwCreateWindow(width, height, WINDOW_TITLE, nullptr, nullptr);
+    assert(window && "Cannot create window");
+
+    glfwMakeContextCurrent(window);
+    assert(gladLoadGL() && "Cannot load OpenGL functions.");
+
     {
-        std::cerr << model.get_load_errors() << std::endl << model.get_load_warnings() << std::endl;
+        App app(window);
+        assert(app.init() && "App initialization failed.");
+        app.run();
     }
 
-    std::string filename;
-    std::string prev;
-    std::shared_ptr<Lua> lua = Lua::inst();
-
-    std::cout << "Type in the file you want to execute (or just enter to reuse the last one):" << std::endl;
-    while (true)
-    {
-        std::cout << "> ";
-        std::getline(std::cin, filename);
-        if (std::cin.eof())
-        {
-            break;
-        }
-        if (filename == "")
-        {
-            filename = prev;
-        }
-        lua->execute_file(filename);
-        prev = filename;
-    }
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
     return 0;
 }

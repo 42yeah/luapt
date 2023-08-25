@@ -20,7 +20,7 @@ struct Triangle {
 };
 
 /**
- * @todo write docs
+ * The scene representation (for now.)
  */
 class Model
 {
@@ -48,6 +48,9 @@ public:
     int get_num_tris() const;
     std::string get_load_warnings() const;
     std::string get_load_errors() const;
+
+    const Triangle &get_triangle(int index) const;
+    const std::vector<Triangle> &get_all_triangles() const;
 
 private:
     int id_;
