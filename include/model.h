@@ -31,6 +31,11 @@ public:
     Model();
 
     /**
+     * Model can be constructed from an array of triangles.
+     */
+    Model(const std::vector<Triangle> &tri);
+
+    /**
      * No copy constructor.
      */
     Model(const Model& other) = delete;

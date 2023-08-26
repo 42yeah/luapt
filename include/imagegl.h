@@ -6,6 +6,7 @@
 #define IMAGEGL_H
 
 #include <glad/glad.h>
+#include <memory>
 #include "image.h"
 
 /**
@@ -19,12 +20,15 @@ public:
      */
     ImageGL();
 
+    ImageGL(std::shared_ptr<Image> image);
+
+    bool import_from_image(const Image &image);
+    const std::shared_ptr<Image> get_base_image() const;
+
     /**
-     * Copy constructor
-     *
-     * @param other TODO
+     * No copy constructor
      */
-    ImageGL(const ImageGL& other);
+    ImageGL(const ImageGL& other) = delete;
 
     /**
      * Destructor
@@ -34,7 +38,7 @@ public:
 private:
     bool initialized;
     GLuint texture;
-    const Image *image;
+    std::shared_ptr<Image> image;
 };
 
 #endif // IMAGEGL_H

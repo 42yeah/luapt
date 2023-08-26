@@ -13,9 +13,18 @@ Model::Model() : id_(model_id_counter++), initialized(false)
 
 }
 
+Model::Model(const std::vector<Triangle> &tri) : Model()
+{
+    if (tri.size() > 0)
+    {
+        this->tri = tri;
+        initialized = true;
+    }
+}
+
 Model::~Model()
 {
-
+    initialized = false;
 }
 
 int Model::id() const

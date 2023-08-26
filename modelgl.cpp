@@ -4,14 +4,19 @@
 
 #include "modelgl.h"
 
-ModelGL::ModelGL() : initialized(false), vao(GL_NONE), vbo(GL_NONE), model(nullptr)
+ModelGL::ModelGL() : initialized(false), vao(GL_NONE), vbo(GL_NONE), num_verts(0), model(nullptr)
 {
 
 }
 
-ModelGL::ModelGL(const Model &model) : ModelGL()
+ModelGL::ModelGL(std::shared_ptr<Model> model) : ModelGL()
 {
-    import_from_model(model);
+    if (model != nullptr)
+    {
+        this->model = model;
+        this->num_verts = model->get_num_verts();
+        import_from_model(*model);
+    }
 }
 
 
@@ -24,7 +29,6 @@ bool ModelGL::import_from_model(const Model &model)
     }
 
     initialized = false;
-    this->model = &model;
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -44,12 +48,26 @@ bool ModelGL::import_from_model(const Model &model)
     return true;
 }
 
-const Model *ModelGL::get_base_model() const
+const std::shared_ptr<Model> ModelGL::get_base_model() const
 {
+    assert(initialized && "ModelGL is not initialized");
     return model;
 }
 
 ModelGL::~ModelGL()
 {
-
+    if (initialized)
+    {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        initialized = false;
+    }
 }
+
+void ModelGL::draw() const
+{
+    assert(initialized && "ModelGL is not initialized");
+    glBindVertexArray(vao);
+    glDrawArrays(GL_TRIANGLES, 0, num_verts);
+}
+

@@ -21,12 +21,14 @@ public:
      */
     ModelGL();
 
-    ModelGL(const Model &model);
+    ModelGL(std::shared_ptr<Model> model);
 
     ModelGL(const ModelGL &other) = delete;
 
     bool import_from_model(const Model &model);
-    const Model *get_base_model() const;
+    const std::shared_ptr<Model> get_base_model() const;
+
+    void draw() const;
 
     /**
      * Destructor
@@ -36,7 +38,8 @@ public:
 private:
     bool initialized;
     GLuint vao, vbo;
-    const Model *model;
+    int num_verts;
+    std::shared_ptr<Model> model;
 };
 
 #endif // MODELGL_H

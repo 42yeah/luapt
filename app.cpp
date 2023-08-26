@@ -12,7 +12,7 @@
 
 int thread_id_counter = 0;
 
-App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection("")
+App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), display_rect(nullptr), image_viewing_shader(nullptr)
 {
 
 }
@@ -30,12 +30,35 @@ bool App::init()
     if (!ImGui_ImplGlfw_InitForOpenGL(window, true))
     {
         std::cerr << "Cannot initialize ImGui GLFW backend." << std::endl;
+        return false;
     }
     if (!ImGui_ImplOpenGL3_Init("#version 330 core"))
     {
         std::cerr << "Cannot initialize ImGui OpenGL3 backend." << std::endl;
+        return false;
     }
 
+    // Initialize the display rectangle.
+    Vertex corners[4] = {
+        Vertex{ glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec3(0.0f), glm::vec2(0.0f) },
+        Vertex{ glm::vec3(1.0f, -1.0f, 0.0f), glm::vec3(0.0f), glm::vec2(0.0f) },
+        Vertex{ glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(0.0f), glm::vec2(0.0f) },
+        Vertex{ glm::vec3(-1.0f, 1.0f, 0.0f), glm::vec3(0.0f), glm::vec2(0.0f) }
+    };
+    std::vector<Triangle> rect = {{
+        Triangle{ corners[0], corners[1], corners[2] },
+        Triangle{ corners[2], corners[3], corners[0] }
+    }};
+    std::shared_ptr<Model> model = std::make_shared<Model>(rect);
+    display_rect = std::make_shared<ModelGL>(model);
+
+    image_viewing_shader = std::make_shared<ShaderGL>();
+    if (!image_viewing_shader->link_from_files("shaders/rect.vs", "shaders/rect.fs"))
+    {
+        return false;
+    }
+
+    // Launch threads.
     int con = std::thread::hardware_concurrency();
     if (con == 0)
     {
@@ -48,6 +71,8 @@ bool App::init()
     }
 
     initialized = true;
+
+    std::cout << glGetError() << std::endl;
 
     return true;
 }
@@ -94,6 +119,10 @@ void App::render_frame()
 
     glClearColor(1.0f, 0.5f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Draw the rectangle.
+    image_viewing_shader->use();
+    display_rect->draw();
 
     render_ui();
 }

@@ -39,6 +39,7 @@ public:
     RGB get_rgb(int x, int y) const;
     bool save(const std::string &dest) const;
     bool save_compressed(const std::string &dest, int quality) const;
+    const CComp * const get() const; // Most consts I've seen in my life
 
     /**
      * Resize the image using stb_image_resize.

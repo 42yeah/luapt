@@ -110,7 +110,7 @@ bool Image::save_compressed(const std::string &dest, int quality) const
 
 Image::~Image()
 {
-
+    initialized = false;
 }
 
 CComp ccomp(float t)
@@ -172,4 +172,9 @@ bool Image::resize(int nx, int ny)
     h = ny;
     image = std::move(ptr);
     return true;
+}
+
+const CComp * const Image::get() const
+{
+    return image.get();
 }

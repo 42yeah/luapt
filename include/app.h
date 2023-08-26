@@ -15,6 +15,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "job.h"
+#include "modelgl.h"
+#include "shadergl.h"
 #define MAX_INPUT_CHAR_LENGTH 256
 
 /**
@@ -73,6 +75,10 @@ private:
     char current_script_path[MAX_INPUT_CHAR_LENGTH];
     char code_injection[MAX_INPUT_CHAR_LENGTH];
     std::vector<std::string> previous_scripts;
+
+    // Misc resources
+    std::shared_ptr<ModelGL> display_rect; // The display rectangle used to show images
+    std::shared_ptr<ShaderGL> image_viewing_shader;
 };
 
 #endif // APP_H
