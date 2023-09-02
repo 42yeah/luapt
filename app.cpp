@@ -357,7 +357,7 @@ void App::worker_thread(App &app, int thread_id)
         Job job = app.jobs.front();
         app.jobs.pop();
 
-        std::cout << "Worker #" << thread_id << ": job popped. Remaining jobs: " << app.jobs.size() << std::endl;
+        // std::cout << "Worker #" << thread_id << ": job popped. Remaining jobs: " << app.jobs.size() << std::endl;
         me.current_job = &job;
         me.idle = false;
         lk.unlock();
@@ -383,6 +383,16 @@ void App::worker_thread(App &app, int thread_id)
                 const ParallelParams &pparams = job.get_parallel_params();
                 lua_clone->call_shade(pparams.bytecode, pparams.u, pparams.v, pparams.x, pparams.y, pparams.w, pparams.h, pparams.image_handle);
 
+                if (lua_clone->err_log.size() > 0 && app.lua.err_log.size() < MAX_ERR_LOG_SIZE)
+                {
+                    std::lock_guard<std::mutex> lk(app.mu);
+                    for (int i = 0; i < lua_clone->err_log.size(); i++)
+                    {
+                        app.lua.err_log.push_back(lua_clone->err_log[i]);
+                    }
+                    lua_clone->err_log.clear();
+                }
+
                 break;
             }
         }
@@ -392,7 +402,7 @@ void App::worker_thread(App &app, int thread_id)
             me.current_job = nullptr;
             me.idle = true;
             app.done_job_count++;
-            std::cout << thread_id << ": Done!" << std::endl;
+            // std::cout << thread_id << ": Done!" << std::endl;
         }
     }
 }

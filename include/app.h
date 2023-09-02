@@ -20,6 +20,7 @@
 #include "imagegl.h"
 #include "luaenv.h"
 #define MAX_INPUT_CHAR_LENGTH 256
+#define MAX_ERR_LOG_SIZE 256
 
 /**
  * App manages both the OpenGL context and the Lua context. Basically the user interface.

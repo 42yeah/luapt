@@ -3,10 +3,14 @@ require "lib/model"
 require "math"
 local pprint = require "lib/pprint"
 
-local size = 100
-local im = Image:new(size, size)
+local imw = 720
+local imh = 720
+local im = Image:new(imw, imh)
 
 function sh(u, v, x, y, w, h, handle)
+    require "lib/vector"
+    u = u * 2.0 - 1.0
+    v = v * 2.0 - 1.0
     local ro = Vec4:new(0, 0, -2, 1)
     local center = Vec4:new(0, 0, 0, 1)
     local front = center:subtr(ro):nor3() -- most of the time we won't be needing the 4th component
@@ -49,4 +53,4 @@ function sh(u, v, x, y, w, h, handle)
     end
 end
 
-res = shade(50, 50, im.handle, sh)
+res = shade(imw, imh, im.handle, sh)
