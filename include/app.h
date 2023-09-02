@@ -52,7 +52,7 @@ private:
     void render_ui();
     void launch_new_thread();
     void queue_single_job(const Job &job);
-    void queue_batch_job(int w, int h, const std::string &bytecode, int image_handle);
+    void queue_batch_job(int w, int h, const std::string &bytecode, int image_handle, bool wait_until_finish);
 
     /**
      * @returns if a batch job is launched at the moment.

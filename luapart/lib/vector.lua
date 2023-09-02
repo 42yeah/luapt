@@ -82,3 +82,7 @@ function clamp(x, a, b)
     end
     return x
 end
+
+function mix(a, b, x)
+    return (1 - x) * a + x * b
+end

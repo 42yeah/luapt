@@ -54,3 +54,4 @@ function sh(u, v, x, y, w, h, handle)
 end
 
 res = shade(imw, imh, im.handle, sh)
+print("Shade complete.")

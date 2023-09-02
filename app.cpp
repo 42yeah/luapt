@@ -74,7 +74,7 @@ bool App::init()
     initialized = true;
     lua.parallel_launcher = [&](int w, int h, const std::string &bytecode, int image_handle)
     {
-        queue_batch_job(w, h, bytecode, image_handle);
+        queue_batch_job(w, h, bytecode, image_handle, true);
     };
 
     return true;
@@ -402,6 +402,11 @@ void App::worker_thread(App &app, int thread_id)
             me.current_job = nullptr;
             me.idle = true;
             app.done_job_count++;
+
+            if (app.done_job_count + 1 >= app.batch_job_count)
+            {
+                app.cv.notify_all();
+            }
             // std::cout << thread_id << ": Done!" << std::endl;
         }
     }
@@ -418,7 +423,7 @@ void App::queue_single_job(const Job &job)
     cv.notify_one();
 }
 
-void App::queue_batch_job(int w, int h, const std::string &bytecode, int image_handle)
+void App::queue_batch_job(int w, int h, const std::string &bytecode, int image_handle, bool wait_until_finish)
 {
     {
         std::lock_guard<std::mutex> lk(mu);
@@ -435,6 +440,15 @@ void App::queue_batch_job(int w, int h, const std::string &bytecode, int image_h
         }
     }
     cv.notify_all();
+
+    if (wait_until_finish)
+    {
+        std::unique_lock<std::mutex> lk(mu);
+        cv.wait(lk, [&]()
+        {
+            return !alive || (batch_job_count <= done_job_count + 1);
+        });
+    }
 }
 
 bool App::is_busy()
