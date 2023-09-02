@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <functional>
 #include "image.h"
 #include "model.h"
 
@@ -24,9 +25,16 @@ class Lua
 {
 public:
     /**
-     * No copy constructor
+     * Default constructor
      */
-    Lua(const Lua &another) = delete;
+    Lua();
+
+    /**
+     * The copy constructor is used for multithreading.
+     * Other instances of Lua will simply inherit the images and models between them, making them all shared.
+     * However, each lua_State * is brand new.
+     */
+    Lua(const Lua &another);
 
     /**
      * Destructor
@@ -35,6 +43,7 @@ public:
 
     int execute(const std::string &buffer);
     int execute_file(const std::string &file);
+    void call_shade(const std::string &bytecode, float u, float v, int x, int y, int w, int h, int image_handle);
 
     void report_error(const std::string &msg);
     void register_funcs();
@@ -43,6 +52,8 @@ public:
     const std::vector<std::shared_ptr<Model> > &get_models() const;
 
     std::vector<std::string> err_log;
+
+    static Lua *get_self(lua_State *l);
 
     // Images
     static int make_image(lua_State *l);
@@ -55,20 +66,35 @@ public:
     static int model_tri_count(lua_State *l);
     static int model_get_tri(lua_State *l);
     static int free_model(lua_State *l);
+    static int shade(lua_State *l);
 
-    static std::shared_ptr<Lua> inst();
+    // We will try to call this when we need to aunch w*h number of threads.
+    // Parameters: w, h, bytecode, and the image handle
+    std::function<void(int, int, std::string, int)> parallel_launcher;
 
 private:
-    /**
-     * Default constructor
-     * Thou shalt not call me directly, for I am a singleton
-     */
-    Lua();
-
     bool lua_ready;
     lua_State *l;
-    std::vector<std::shared_ptr<Image> > images;
-    std::vector<std::shared_ptr<Model> > models;
+    bool cloned;
+
+    std::shared_ptr<std::vector<std::shared_ptr<Image> > > images;
+    std::shared_ptr<std::vector<std::shared_ptr<Model> > > models;
 };
+
+// Some helper functions
+
+/**
+ * Copy the current table referenced in the `from` stack to the `to` stack.
+ * @param to the destination.
+ * @param from the source.
+ */
+void lua_copy_table(lua_State *to, lua_State *from, int table_index);
+
+/**
+ * Copy the current value referenced in the `from` stack to the `to` stack.
+ * @param to the destination.
+ * @param from the source.
+ */
+void lua_copy_value(lua_State *to, lua_State *from);
 
 #endif // LUA_H

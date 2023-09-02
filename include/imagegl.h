@@ -24,6 +24,7 @@ public:
 
     bool import_from_image(const Image &image);
     const std::shared_ptr<Image> get_base_image() const;
+    void bind() const;
 
     /**
      * No copy constructor

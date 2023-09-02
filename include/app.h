@@ -17,6 +17,8 @@
 #include "job.h"
 #include "modelgl.h"
 #include "shadergl.h"
+#include "imagegl.h"
+#include "luaenv.h"
 #define MAX_INPUT_CHAR_LENGTH 256
 
 /**
@@ -49,6 +51,7 @@ private:
     void render_ui();
     void launch_new_thread();
     void queue_single_job(const Job &job);
+    void queue_batch_job(int w, int h, const std::string &bytecode, int image_handle);
 
     /**
      * @returns if a batch job is launched at the moment.
@@ -64,6 +67,7 @@ private:
 
     // Threads
     std::vector<std::thread> threads;
+    std::map<int, WorkerStats> worker_stats;
     std::queue<Job> jobs;
     int batch_job_count;
     int done_job_count;
@@ -75,10 +79,14 @@ private:
     char current_script_path[MAX_INPUT_CHAR_LENGTH];
     char code_injection[MAX_INPUT_CHAR_LENGTH];
     std::vector<std::string> previous_scripts;
+    int viewing_image_idx, viewing_model_idx;
 
     // Misc resources
     std::shared_ptr<ModelGL> display_rect; // The display rectangle used to show images
     std::shared_ptr<ShaderGL> image_viewing_shader;
+    std::shared_ptr<ImageGL> showing_image;
+
+    Lua lua;
 };
 
 #endif // APP_H

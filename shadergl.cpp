@@ -151,3 +151,20 @@ void ShaderGL::use() const
     assert(initialized && "ShaderGL is not initialized");
     glUseProgram(program);
 }
+
+GLint ShaderGL::get_location(const std::string& uniform_name)
+{
+    assert(initialized && "ShaderGL is not initialized");
+    auto pos = locations.find(uniform_name);
+    if (pos != locations.end())
+    {
+        return pos->second;
+    }
+    GLint loc = glGetUniformLocation(program, uniform_name.c_str());
+    if (loc < 0)
+    {
+        std::cerr << "WARNING: uniform location not found: " << uniform_name << std::endl;
+    }
+    locations[uniform_name] = loc;
+    return loc;
+}

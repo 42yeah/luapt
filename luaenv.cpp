@@ -8,13 +8,37 @@
 #include <algorithm>
 #include <image.h>
 
-std::shared_ptr<Lua> lua_inst = nullptr;
 
-Lua::Lua() : lua_ready(false), l(nullptr)
+Lua::Lua() : parallel_launcher(nullptr), lua_ready(false), l(nullptr), cloned(false)
 {
+    images = std::make_shared<std::vector<std::shared_ptr<Image> > >();
+    models = std::make_shared<std::vector<std::shared_ptr<Model> > >();
+
     l = luaL_newstate();
     luaL_openlibs(l);
     register_funcs();
+
+    lua_pushlightuserdata(l, this);
+    lua_setglobal(l, "luaenv");
+
+    if (l)
+    {
+        lua_ready = true;
+    }
+}
+
+Lua::Lua(const Lua &another) : parallel_launcher(nullptr), lua_ready(false), l(nullptr), cloned(true)
+{
+    images = another.images;
+    models = another.models;
+
+    l = luaL_newstate();
+    luaL_openlibs(l);
+    register_funcs();
+
+    lua_pushlightuserdata(l, this);
+    lua_setglobal(l, "luaenv");
+
     if (l)
     {
         lua_ready = true;
@@ -67,12 +91,12 @@ void Lua::report_error(const std::string &msg)
 
 const std::vector<std::shared_ptr<Image> > &Lua::get_images() const
 {
-    return images;
+    return *images;
 }
 
 const std::vector<std::shared_ptr<Model> > &Lua::get_models() const
 {
-    return models;
+    return *models;
 }
 
 Lua::~Lua()
@@ -81,15 +105,6 @@ Lua::~Lua()
     {
         lua_close(l);
     }
-}
-
-std::shared_ptr<Lua> Lua::inst()
-{
-    if (lua_inst == nullptr)
-    {
-        lua_inst = std::shared_ptr<Lua>(new Lua());
-    }
-    return lua_inst;
 }
 
 int generate_test_gradient_image(lua_State *l)
@@ -102,18 +117,30 @@ int generate_test_gradient_image(lua_State *l)
     return 0;
 }
 
+Lua *Lua::get_self(lua_State *l)
+{
+    assert(lua_getglobal(l, "luaenv") != 0 && "luaenv not found");
+    Lua *self = (Lua *) (lua_touserdata(l, -1));
+    lua_pop(l, 1);
+    return self;
+}
+
 int Lua::make_image(lua_State *l)
 {
+    Lua *self = get_self(l);
+
     int w = lua_tointeger(l, 1);
     int h = lua_tointeger(l, 2);
     std::shared_ptr<Image> img = std::make_shared<Image>(w, h, 4);
-    inst()->images.push_back(img);
+    self->images->push_back(img);
     lua_pushinteger(l, img->id());
     return 1;
 }
 
 int Lua::set_pixel(lua_State *l)
 {
+    Lua *self = get_self(l);
+
     int id = lua_tointeger(l, 1);
     int x = lua_tointeger(l, 2);
     int y = lua_tointeger(l, 3);
@@ -121,14 +148,14 @@ int Lua::set_pixel(lua_State *l)
     float g = lua_tonumber(l, 5);
     float b = lua_tonumber(l, 6);
 
-    auto it = std::find_if(inst()->images.begin(), inst()->images.end(), [&](const std::shared_ptr<Image> &img)
+    auto it = std::find_if(self->images->begin(), self->images->end(), [&](const std::shared_ptr<Image> &img)
         {
             return img->id() == id;
         }
     );
 
     // Check if the image exists.
-    if (it == inst()->images.end())
+    if (it == self->images->end())
     {
         luaL_error(l, "Image handle not found: %d.", id);
         return 0;
@@ -148,16 +175,18 @@ int Lua::set_pixel(lua_State *l)
 
 int Lua::save_image(lua_State *l)
 {
+    Lua *self = get_self(l);
+
     int id = lua_tointeger(l, 1);
     const char *path = lua_tostring(l, 2);
-    auto it = std::find_if(inst()->images.begin(), inst()->images.end(), [&](const std::shared_ptr<Image> &img)
+    auto it = std::find_if(self->images->begin(), self->images->end(), [&](const std::shared_ptr<Image> &img)
         {
             return img->id() == id;
         }
     );
 
     // Check if the image exists.
-    if (it == inst()->images.end())
+    if (it == self->images->end())
     {
         luaL_error(l, "Image handle not found: %d.", id);
         return 0;
@@ -173,26 +202,30 @@ int Lua::save_image(lua_State *l)
 
 int Lua::free_image(lua_State *l)
 {
+    Lua *self = get_self(l);
+
     int id = lua_tointeger(l, 1);
-    auto it = std::find_if(inst()->images.begin(), inst()->images.end(), [&](const std::shared_ptr<Image> &img)
+    auto it = std::find_if(self->images->begin(), self->images->end(), [&](const std::shared_ptr<Image> &img)
         {
             return img->id() == id;
         }
     );
 
     // Check if the image exists.
-    if (it == inst()->images.end())
+    if (it == self->images->end())
     {
         luaL_error(l, "Image handle not found: %d.", id);
         return 0;
     }
 
-    inst()->images.erase(it);
+    self->images->erase(it);
     return 0;
 }
 
 int Lua::make_model(lua_State *l)
 {
+    Lua *self = get_self(l);
+
     const char *path = lua_tostring(l, 1);
 
     std::shared_ptr<Model> model = std::make_shared<Model>();
@@ -208,22 +241,24 @@ int Lua::make_model(lua_State *l)
         std::cerr << "WARNING! " << warnings << std::endl;
     }
 
-    inst()->models.push_back(model);
+    self->models->push_back(model);
     lua_pushinteger(l, model->id());
     return 1;
 }
 
 int Lua::model_tri_count(lua_State *l)
 {
+    Lua *self = get_self(l);
+
     int id = lua_tointeger(l, 1);
-    auto it = std::find_if(inst()->models.begin(), inst()->models.end(), [&](const std::shared_ptr<Model> &model)
+    auto it = std::find_if(self->models->begin(), self->models->end(), [&](const std::shared_ptr<Model> &model)
         {
             return model->id() == id;
         }
     );
 
     // Check if the model exists.
-    if (it == inst()->models.end())
+    if (it == self->models->end())
     {
         luaL_error(l, "Model handle not found: %d.", id);
         return 0;
@@ -235,15 +270,17 @@ int Lua::model_tri_count(lua_State *l)
 
 int Lua::model_get_tri(lua_State *l)
 {
+    Lua *self = get_self(l);
+
     int id = lua_tointeger(l, 1);
     int index = lua_tointeger(l, 2);
 
-    auto it = std::find_if(inst()->models.begin(), inst()->models.end(), [&](const std::shared_ptr<Model> &model)
+    auto it = std::find_if(self->models->begin(), self->models->end(), [&](const std::shared_ptr<Model> &model)
         {
             return model->id() == id;
         }
     );
-    if (it == inst()->models.end())
+    if (it == self->models->end())
     {
         luaL_error(l, "Model handle not found: %d.", id);
         return 0;
@@ -288,23 +325,84 @@ int Lua::model_get_tri(lua_State *l)
 
 int Lua::free_model(lua_State *l)
 {
+    Lua *self = get_self(l);
+
     int id = lua_tointeger(l, 1);
 
-    auto it = std::find_if(inst()->models.begin(), inst()->models.end(), [&](const std::shared_ptr<Model> &model)
+    auto it = std::find_if(self->models->begin(), self->models->end(), [&](const std::shared_ptr<Model> &model)
         {
             return model->id() == id;
         }
     );
 
     // Check if the model exists.
-    if (it == inst()->models.end())
+    if (it == self->models->end())
     {
         luaL_error(l, "Model handle not found: %d.", id);
         return 0;
     }
 
-    inst()->models.erase(it);
+    self->models->erase(it);
     return 0;
+}
+
+int Lua::shade(lua_State *l)
+{
+    Lua *self = get_self(l);
+    assert(self->parallel_launcher && "Parallel computation not supported");
+
+    int w = lua_tonumber(l, 1);
+    int h = lua_tonumber(l, 2);
+    int img_handle = lua_tointeger(l, 3);
+    // lua_pushstring(l, "handle");
+    // lua_gettable(l, 3);
+    // int img_handle = lua_tointeger(l, -1);
+    // lua_pop(l, 1);
+    int callback_ref = luaL_ref(l, LUA_REGISTRYINDEX);
+
+    // Dump the function
+    lua_rawgeti(l, LUA_REGISTRYINDEX, callback_ref);
+    std::string buffer;
+    auto writer = [](lua_State *l, const void *p, size_t size, void *ud)
+    {
+        std::string *buf = (std::string *) ud;
+        buf->append((const char *) p, size);
+        return 0;
+    };
+
+    assert(lua_dump(l, writer, &buffer, true) == 0 && "Failed to dump Lua source code");
+
+    self->parallel_launcher(w, h, buffer, img_handle);
+
+    return 0;
+}
+
+void Lua::call_shade(const std::string &bytecode, float u, float v, int x, int y, int w, int h, int image_handle)
+{
+    assert(lua_ready && l && "Lua is not ready");
+
+    int error = luaL_loadbuffer(l, bytecode.c_str(), bytecode.size(), "shade");
+    if (error)
+    {
+        std::stringstream err;
+        err << "Failed to load bytecode: " << lua_tostring(l, -1);
+        err_log.push_back(err.str());
+    }
+
+    lua_pushnumber(l, u);
+    lua_pushnumber(l, v);
+    lua_pushinteger(l, x);
+    lua_pushinteger(l, y);
+    lua_pushinteger(l, w);
+    lua_pushinteger(l, h);
+    lua_pushinteger(l, image_handle);
+
+    if (lua_pcall(l, 7, 0, 0))
+    {
+        std::stringstream err;
+        err << "Failed to call function: " << lua_tostring(l, -1);
+        err_log.push_back(err.str());
+    }
 }
 
 void Lua::register_funcs()
@@ -319,4 +417,49 @@ void Lua::register_funcs()
     lua_register(l, "free_model", Lua::free_model);
     lua_register(l, "model_tri_count", Lua::model_tri_count);
     lua_register(l, "model_get_tri", Lua::model_get_tri);
+    lua_register(l, "shade", Lua::shade);
+}
+
+void lua_copy_table(lua_State *to, lua_State *from, int table_index)
+{
+    lua_newtable(to);
+    lua_pushnil(from);
+    while (lua_next(from, table_index) != 0)
+    {
+        lua_copy_value(to, from); // Copy value
+        lua_copy_value(to, from); // Copy key
+        lua_settable(to, -3);
+        lua_pop(from, 1);
+    }
+}
+
+void lua_copy_value(lua_State *to, lua_State *from)
+{
+    int type = lua_type(from, -1);
+    switch (type)
+    {
+        case LUA_TNIL:
+            lua_pushnil(to);
+            break;
+
+        case LUA_TBOOLEAN:
+            lua_pushboolean(to, lua_toboolean(from, -1));
+            break;
+
+        case LUA_TNUMBER:
+            lua_pushnumber(to, lua_tonumber(from, -1));
+            break;
+
+        case LUA_TSTRING:
+            lua_pushstring(to, lua_tostring(from, -1));
+            break;
+
+        case LUA_TTABLE:
+            lua_copy_table(to, from, -1);
+            break;
+
+        default:
+            assert(false && "Unknown type");
+            break;
+    }
 }

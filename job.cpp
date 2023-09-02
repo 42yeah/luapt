@@ -4,7 +4,7 @@
 
 #include "job.h"
 
-Job::Job(JobType type, const std::string &script_path, const std::string &code_injection) : type(type), script_path(script_path), code_injection(code_injection)
+Job::Job(JobType type, const ParallelParams &pparams, const std::string &script_path, const std::string &code_injection) : type(type), script_path(script_path), code_injection(code_injection), pparams(pparams)
 {
 
 }
@@ -23,4 +23,9 @@ const std::string &Job::get_script_path() const
 const std::string &Job::get_code_injection() const
 {
     return code_injection;
+}
+
+const ParallelParams &Job::get_parallel_params() const
+{
+    return pparams;
 }

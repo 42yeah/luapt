@@ -3,13 +3,13 @@ require "lib/model"
 require "math"
 local pprint = require "lib/pprint"
 
-local size = 10
+local size = 50
 local im = Image:new(size, size)
 local model = Model:new("torus.obj")
 print("Model loaded: ", model.path, ". #triangles:", model:tri_count())
 
 function shade(u, v, x, y)
-    local ro = Vec4:new(2, 1.2, 2.5, 1)
+    local ro = Vec4:new(4.5, 3.2, 1.5, 1)
     local center = Vec4:new(0, 0.0, 0.0, 1)
     local front = center:subtr(ro):nor3() -- most of the time we won't be needing the 4th component
     local right = front:cross(Vec4:new(0, 1, 0, 1)):nor3()
@@ -48,7 +48,7 @@ function shade(u, v, x, y)
     local ambient = 0.2
     local diffuse = math.max(0, rd:dot3(closest_tri.a.normal))
 
-    return Vec4:new(1.0, 0.5, 0.0, 1):scl(ambient + diffuse)
+    return Vec4:new(1.0, 0.2, 1.0, 1):scl(ambient + diffuse)
 end
 
 for y = 1, size do

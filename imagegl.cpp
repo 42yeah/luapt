@@ -26,8 +26,8 @@ bool ImageGL::import_from_image(const Image &image)
     {
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
@@ -51,4 +51,10 @@ ImageGL::~ImageGL()
         glDeleteTextures(1, &texture);
         initialized = false;
     }
+}
+
+void ImageGL::bind() const
+{
+    assert(initialized && "ImageGL is not initialized");
+    glBindTexture(GL_TEXTURE_2D, texture);
 }

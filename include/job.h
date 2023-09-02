@@ -10,7 +10,25 @@
 
 enum class JobType
 {
-    Nothing, Suicide, RunScript, Execute
+    Nothing, Suicide, RunScript, Execute, ExecuteParallel
+};
+
+struct ParallelParams
+{
+    ParallelParams() : u(0.0f), v(0.0f), x(0), y(0), w(0), h(0), bytecode(""), image_handle(-1)
+    {
+
+    }
+
+    ParallelParams(float u, float v, int x, int y, int w, int h, const std::string &bytecode, int image_handle) : u(u), v(v), x(x), y(y), w(w), h(h), bytecode(bytecode), image_handle(image_handle)
+    {
+
+    }
+
+    float u, v;
+    int x, y, w, h;
+    std::string bytecode;
+    int image_handle;
 };
 
 /**
@@ -22,7 +40,7 @@ public:
     /**
      * Default constructor
      */
-    Job(JobType type, const std::string &script_path = "", const std::string &snippet = "");
+    Job(JobType type, const ParallelParams& pparams, const std::string& script_path = "", const std::string& code_injection = "");
 
     /**
      * Copy constructor
@@ -39,11 +57,21 @@ public:
     JobType get_job_type() const;
     const std::string &get_script_path() const;
     const std::string &get_code_injection() const;
+    const ParallelParams &get_parallel_params() const;
 
 private:
     JobType type;
     std::string script_path;
     std::string code_injection;
+    ParallelParams pparams;
+};
+
+struct WorkerStats
+{
+    int id;
+    bool alive;
+    bool idle;
+    Job *current_job;
 };
 
 #endif // JOB_H

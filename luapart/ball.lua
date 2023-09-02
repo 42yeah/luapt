@@ -5,11 +5,13 @@ local pprint = require "lib/pprint"
 local im = Image:new(100, 100)
 
 function shade(u, v, x, y)
+    require "lib/vector.lua"
+
     ro = Vec4:new(0, 0, -2, 1)
     center = Vec4:new(0, 0, 0, 1)
     front = center:subtr(ro):nor3() -- most of the time we won't be needing the 4th component
     right = front:cross(Vec4:new(0, 1, 0, 1)):nor3()
-    up = front:cross(right):nor3()
+    up = right:cross(front):nor3()
 
     rd = right:scl(u):add(up:scl(v)):add(front:scl(1)):nor3()
     t = 0.01

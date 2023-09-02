@@ -7,6 +7,7 @@
 
 #include <glad/glad.h>
 #include <string>
+#include <map>
 #define MAX_ERR_LOG_LENGTH 1024
 
 /**
@@ -37,8 +38,11 @@ public:
 
     void use() const;
 
+    GLint get_location(const std::string &uniform_name);
+
 private:
     static GLuint compile(GLuint shader_type, const std::string &src);
+    std::map<std::string, GLint> locations;
 
     bool initialized;
     GLuint program;

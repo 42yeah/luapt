@@ -12,7 +12,7 @@
 
 int thread_id_counter = 0;
 
-App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), display_rect(nullptr), image_viewing_shader(nullptr)
+App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), done_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), viewing_image_idx(-1), viewing_model_idx(-1), display_rect(nullptr), image_viewing_shader(nullptr), showing_image(nullptr)
 {
 
 }
@@ -57,6 +57,7 @@ bool App::init()
     {
         return false;
     }
+    showing_image = std::make_shared<ImageGL>();
 
     // Launch threads.
     int con = std::thread::hardware_concurrency();
@@ -71,8 +72,10 @@ bool App::init()
     }
 
     initialized = true;
-
-    std::cout << glGetError() << std::endl;
+    lua.parallel_launcher = [&](int w, int h, const std::string &bytecode, int image_handle)
+    {
+        queue_batch_job(w, h, bytecode, image_handle);
+    };
 
     return true;
 }
@@ -122,6 +125,20 @@ void App::render_frame()
 
     // Draw the rectangle.
     image_viewing_shader->use();
+    glUniform2f((GLuint) image_viewing_shader->get_location("resolution"), (float) w, (float) h);
+    if (viewing_image_idx != -1)
+    {
+        // We are viewing an image. Sync that into our ImageGL, and pass that as uniform.
+        showing_image->import_from_image(*lua.get_images()[viewing_image_idx]);
+        showing_image->bind();
+        glActiveTexture(GL_TEXTURE0);
+        glUniform1i((GLuint) image_viewing_shader->get_location("image"), 0);
+        glUniform1i((GLuint) image_viewing_shader->get_location("hasImage"), 1);
+    }
+    else
+    {
+        glUniform1i((GLuint) image_viewing_shader->get_location("hasImage"), 0);
+    }
     display_rect->draw();
 
     render_ui();
@@ -148,12 +165,13 @@ void App::render_ui()
         if (ImGui::BeginListBox("Images"))
         {
             char name[MAX_INPUT_CHAR_LENGTH] = { 0 };
-            for (int i = 0; i < Lua::inst()->get_images().size(); i++)
+            for (int i = 0; i < lua.get_images().size(); i++)
             {
                 std::sprintf(name, "Image %d", i);
-                if (ImGui::Selectable(name))
+                if (ImGui::Selectable(name, viewing_image_idx == i))
                 {
-                    // Show the image
+                    viewing_image_idx = i;
+                    viewing_model_idx = -1;
                 }
             }
             ImGui::EndListBox();
@@ -161,12 +179,14 @@ void App::render_ui()
         if (ImGui::BeginListBox("Scenes"))
         {
             char name[MAX_INPUT_CHAR_LENGTH] = { 0 };
-            for (int i = 0; i < Lua::inst()->get_models().size(); i++)
+            for (int i = 0; i < lua.get_models().size(); i++)
             {
                 std::sprintf(name, "Scene %d", i);
-                if (ImGui::Selectable(name))
+                if (ImGui::Selectable(name, viewing_model_idx == i))
                 {
-                    // Show the image
+                    // Show the scene
+                    viewing_model_idx = i;
+                    viewing_image_idx = -1;
                 }
             }
             ImGui::EndListBox();
@@ -191,7 +211,7 @@ void App::render_ui()
         if (ImGui::Button("Execute##1") && strnlen(current_script_path, MAX_INPUT_CHAR_LENGTH) != 0)
         {
             std::string path_str(current_script_path);
-            queue_single_job(Job(JobType::RunScript, path_str));
+            queue_single_job(Job(JobType::RunScript, {}, path_str));
             if (std::find(previous_scripts.begin(), previous_scripts.end(), path_str) == previous_scripts.end())
             {
                 previous_scripts.push_back(path_str);
@@ -200,7 +220,7 @@ void App::render_ui()
         ImGui::InputText("Inject", code_injection, sizeof(code_injection)); ImGui::SameLine();
         if (ImGui::Button("Execute##2") && strnlen(code_injection, MAX_INPUT_CHAR_LENGTH) != 0)
         {
-            queue_single_job(Job(JobType::Execute, "", code_injection));
+            queue_single_job(Job(JobType::Execute, {}, "", code_injection));
         }
 
         if (busy)
@@ -210,15 +230,15 @@ void App::render_ui()
 
         if (ImGui::BeginListBox("Errors"))
         {
-            for (int i = 0; i < Lua::inst()->err_log.size(); i++)
+            for (int i = 0; i < lua.err_log.size(); i++)
             {
-                ImGui::Selectable(Lua::inst()->err_log[i].c_str());
+                ImGui::Selectable(lua.err_log.at(i).c_str());
             }
             ImGui::EndListBox();
         }
         if (ImGui::Button("Clear Errors"))
         {
-            Lua::inst()->err_log.clear();
+            lua.err_log.clear();
         }
         if (ImGui::BeginListBox("Script History"))
         {
@@ -226,14 +246,41 @@ void App::render_ui()
             {
                 if (ImGui::Selectable(previous_scripts[i].c_str()) && !busy)
                 {
-                    queue_single_job(Job(JobType::RunScript, previous_scripts[i]));
+                    queue_single_job(Job(JobType::RunScript, {}, previous_scripts[i]));
                 }
             }
             ImGui::EndListBox();
         }
         if (ImGui::Button("Clear Script History"))
         {
-            Lua::inst()->err_log.clear();
+            lua.err_log.clear();
+        }
+
+        ImGui::Text("Worker stats");
+        if (ImGui::BeginTable("stats", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+        {
+
+            ImGui::TableSetupColumn("Worker ID");
+            ImGui::TableSetupColumn("Idleness");
+            ImGui::TableHeadersRow();
+
+            for (const auto &stat : worker_stats)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+
+                ImGui::Text("Thread %d", stat.second.id);
+                ImGui::TableSetColumnIndex(1);
+                if (!stat.second.idle)
+                {
+                    ImGui::Text("Busy");
+                }
+                else
+                {
+                    ImGui::Text("Idle");
+                }
+            }
+            ImGui::EndTable();
         }
     }
     ImGui::End();
@@ -258,7 +305,8 @@ void App::render_ui()
     }
     else
     {
-        // Show a progress bar for parallelism
+        float done_percent = (float) done_job_count / batch_job_count;
+        ImGui::Text("Running: %f...", done_percent);
     }
     ImGui::End();
 
@@ -275,7 +323,21 @@ void App::launch_new_thread()
 
 void App::worker_thread(App &app, int thread_id)
 {
-    std::cout << "I am being launched. I have an id of " << thread_id << "." << std::endl;
+    std::shared_ptr<Lua> lua_clone = nullptr;
+    app.worker_stats[thread_id] = WorkerStats{};
+    WorkerStats &me = app.worker_stats[thread_id];
+
+    // Acquire a lua clone (for multithreading)
+    // Because of tens of thousands of weird data racing stuffs, we will be creating brand new copies here
+    {
+        std::lock_guard<std::mutex> lk(app.mu);
+        lua_clone = std::make_shared<Lua>(app.lua);
+
+        me.id = thread_id;
+        me.alive = true;
+        me.current_job = nullptr;
+        me.idle = true;
+    }
 
     while (app.alive)
     {
@@ -287,12 +349,17 @@ void App::worker_thread(App &app, int thread_id)
         if (!app.alive)
         {
             std::cout << "Worker #" << thread_id << " is bidding farewell." << std::endl;
+            me.alive = false;
             return;
         }
 
         // Take a job. Any job.
         Job job = app.jobs.front();
         app.jobs.pop();
+
+        std::cout << "Worker #" << thread_id << ": job popped. Remaining jobs: " << app.jobs.size() << std::endl;
+        me.current_job = &job;
+        me.idle = false;
         lk.unlock();
 
         switch (job.get_job_type())
@@ -304,18 +371,28 @@ void App::worker_thread(App &app, int thread_id)
                 return;
 
             case JobType::RunScript:
-                Lua::inst()->execute_file(job.get_script_path());
+                app.lua.execute_file(job.get_script_path());
                 break;
 
             case JobType::Execute:
-                Lua::inst()->execute(job.get_code_injection());
+                app.lua.execute(job.get_code_injection());
                 break;
+
+            case JobType::ExecuteParallel:
+            {
+                const ParallelParams &pparams = job.get_parallel_params();
+                lua_clone->call_shade(pparams.bytecode, pparams.u, pparams.v, pparams.x, pparams.y, pparams.w, pparams.h, pparams.image_handle);
+
+                break;
+            }
         }
 
         {
             std::lock_guard<std::mutex> lk(app.mu);
+            me.current_job = nullptr;
+            me.idle = true;
             app.done_job_count++;
-            std::cout << thread_id << ": Job's done." << std::endl;
+            std::cout << thread_id << ": Done!" << std::endl;
         }
     }
 }
@@ -329,6 +406,25 @@ void App::queue_single_job(const Job &job)
         jobs.push(job);
     }
     cv.notify_one();
+}
+
+void App::queue_batch_job(int w, int h, const std::string &bytecode, int image_handle)
+{
+    {
+        std::lock_guard<std::mutex> lk(mu);
+        batch_job_count += w * h;
+        done_job_count = 0;
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                float u = ((float) x + 0.5f) / w, v = ((float) y + 0.5f) / h;
+                Job job(JobType::ExecuteParallel, ParallelParams(u, v, x, y, w, h, bytecode, image_handle));
+                jobs.push(job);
+            }
+        }
+    }
+    cv.notify_all();
 }
 
 bool App::is_busy()
