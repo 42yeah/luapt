@@ -86,3 +86,7 @@ end
 function mix(a, b, x)
     return (1 - x) * a + x * b
 end
+
+function Vec4:mix(another, x)
+    return Vec4:new(mix(self.x, another.x, x), mix(self.y, another.y, x), mix(self.z, another.z, x), mix(self.w, another.w, x))
+end

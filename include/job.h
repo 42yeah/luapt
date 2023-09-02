@@ -40,7 +40,7 @@ public:
     /**
      * Default constructor
      */
-    Job(JobType type, const ParallelParams& pparams, const std::string& script_path = "", const std::string& code_injection = "");
+    Job(JobType type, const ParallelParams& pparams, const std::string& script_path = "", const std::string& code_injection = "", int target_worker = -1);
 
     /**
      * Copy constructor
@@ -58,12 +58,14 @@ public:
     const std::string &get_script_path() const;
     const std::string &get_code_injection() const;
     const ParallelParams &get_parallel_params() const;
+    int get_target_worker() const;
 
 private:
     JobType type;
     std::string script_path;
     std::string code_injection;
     ParallelParams pparams;
+    int target_worker;
 };
 
 struct WorkerStats

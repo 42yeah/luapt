@@ -306,7 +306,8 @@ void App::render_ui()
     else
     {
         float done_percent = (float) done_job_count / batch_job_count;
-        ImGui::Text("Running: %f...", done_percent);
+        ImGui::Text("Running: %f%%...", done_percent * 100.0f);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(done_percent * w, h), IM_COL32(12, 235, 31, 35));
     }
     ImGui::End();
 
@@ -344,7 +345,18 @@ void App::worker_thread(App &app, int thread_id)
         std::unique_lock<std::mutex> lk(app.mu);
         app.cv.wait(lk, [&]()
         {
-            return !app.jobs.empty() || !app.alive;
+            if (!app.alive)
+            {
+                return true;
+            }
+            bool empty = app.jobs.empty();
+            if (!empty)
+            {
+                const Job &f = app.jobs.front();
+                int tar = f.get_target_worker();
+                return tar == -1 || tar == thread_id;
+            }
+            return false;
         });
         if (!app.alive)
         {
