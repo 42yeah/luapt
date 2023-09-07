@@ -119,7 +119,11 @@ int generate_test_gradient_image(lua_State *l)
 
 Lua *Lua::get_self(lua_State *l)
 {
+#ifdef USE_LUAJIT
+    lua_getglobal(l, "luaenv");
+#else
     assert(lua_getglobal(l, "luaenv") != 0 && "luaenv not found");
+#endif
     Lua *self = (Lua *) (lua_touserdata(l, -1));
     lua_pop(l, 1);
     return self;
@@ -370,7 +374,11 @@ int Lua::shade(lua_State *l)
         return 0;
     };
 
+#ifdef USE_LUAJIT
+    assert(lua_dump(l, writer, &buffer) == 0 && "Failed to dump Lua source code");
+#else
     assert(lua_dump(l, writer, &buffer, true) == 0 && "Failed to dump Lua source code");
+#endif
 
     self->parallel_launcher(w, h, buffer, img_handle);
 
@@ -420,6 +428,7 @@ void Lua::register_funcs()
     lua_register(l, "shade", Lua::shade);
 }
 
+#ifndef USE_LUAJIT
 void lua_copy_table(lua_State *to, lua_State *from, int table_index)
 {
     lua_newtable(to);
@@ -462,4 +471,10 @@ void lua_copy_value(lua_State *to, lua_State *from)
             assert(false && "Unknown type");
             break;
     }
+}
+#endif
+
+void print_hello(int a)
+{
+    std::cout << "Hello fucking world! " << a << std::endl;
 }

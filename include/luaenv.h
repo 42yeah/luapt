@@ -5,9 +5,12 @@
 #ifndef LUAENV_H
 #define LUAENV_H
 
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
+extern "C"
+{
+    #include <lua.h>
+    #include <lauxlib.h>
+    #include <lualib.h>
+}
 #include <iostream>
 #include <memory>
 #include <string>
@@ -96,5 +99,11 @@ void lua_copy_table(lua_State *to, lua_State *from, int table_index);
  * @param from the source.
  */
 void lua_copy_value(lua_State *to, lua_State *from);
+
+// Switching to FFI??!
+extern "C"
+{
+    void print_hello(int a);
+}
 
 #endif // LUA_H

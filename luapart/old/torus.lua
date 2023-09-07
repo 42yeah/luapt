@@ -3,7 +3,7 @@ require "lib/model"
 require "math"
 local pprint = require "lib/pprint"
 
-local size = 50
+local size = 200
 local im = Image:new(size, size)
 local model = Model:new("torus.obj")
 print("Model loaded: ", model.path, ". #triangles:", model:tri_count())
