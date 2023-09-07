@@ -5,6 +5,7 @@
 #include "app.h"
 #include <iostream>
 #include <cassert>
+#include <sstream>
 #include <imgui.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
@@ -72,9 +73,11 @@ bool App::init()
     }
 
     initialized = true;
-    lua.parallel_launcher = [&](int w, int h, const std::string &bytecode, int image_handle)
+
+    // HACK: this implicitly makes App a singleton
+    res()->parallel_launcher = [&](int w, int h, const std::string &path)
     {
-        queue_batch_job(w, h, bytecode, image_handle, true);
+        queue_batch_job(w, h, path, true);
     };
 
     return true;
@@ -129,7 +132,7 @@ void App::render_frame()
     if (viewing_image_idx != -1)
     {
         // We are viewing an image. Sync that into our ImageGL, and pass that as uniform.
-        showing_image->import_from_image(*lua.get_images()[viewing_image_idx]);
+        showing_image->import_from_image(*res()->images[viewing_image_idx]);
         showing_image->bind();
         glActiveTexture(GL_TEXTURE0);
         glUniform1i((GLuint) image_viewing_shader->get_location("image"), 0);
@@ -165,7 +168,7 @@ void App::render_ui()
         if (ImGui::BeginListBox("Images"))
         {
             char name[MAX_INPUT_CHAR_LENGTH] = { 0 };
-            for (int i = 0; i < lua.get_images().size(); i++)
+            for (int i = 0; i < res()->images.size(); i++)
             {
                 std::sprintf(name, "Image %d", i);
                 if (ImGui::Selectable(name, viewing_image_idx == i))
@@ -179,7 +182,7 @@ void App::render_ui()
         if (ImGui::BeginListBox("Scenes"))
         {
             char name[MAX_INPUT_CHAR_LENGTH] = { 0 };
-            for (int i = 0; i < lua.get_models().size(); i++)
+            for (int i = 0; i < res()->models.size(); i++)
             {
                 std::sprintf(name, "Scene %d", i);
                 if (ImGui::Selectable(name, viewing_model_idx == i))
@@ -230,15 +233,15 @@ void App::render_ui()
 
         if (ImGui::BeginListBox("Errors"))
         {
-            for (int i = 0; i < lua.err_log.size(); i++)
+            for (auto err = res()->err_begin(); err != res()->err_end(); err++)
             {
-                ImGui::Selectable(lua.err_log.at(i).c_str());
+                ImGui::Selectable(err->c_str());
             }
             ImGui::EndListBox();
         }
         if (ImGui::Button("Clear Errors"))
         {
-            lua.err_log.clear();
+            res()->clear_error();
         }
         if (ImGui::BeginListBox("Script History"))
         {
@@ -253,7 +256,7 @@ void App::render_ui()
         }
         if (ImGui::Button("Clear Script History"))
         {
-            lua.err_log.clear();
+            previous_scripts.clear();
         }
 
         ImGui::Text("Worker stats");
@@ -332,7 +335,7 @@ void App::worker_thread(App &app, int thread_id)
     // Because of tens of thousands of weird data racing stuffs, we will be creating brand new copies here
     {
         std::lock_guard<std::mutex> lk(app.mu);
-        lua_clone = std::make_shared<Lua>(app.lua);
+        lua_clone = std::make_shared<Lua>();
 
         me.id = thread_id;
         me.alive = true;
@@ -392,18 +395,12 @@ void App::worker_thread(App &app, int thread_id)
 
             case JobType::ExecuteParallel:
             {
+                /**
+                 * Execute scripts in parallel.
+                 * The source code is available in ParallelParams.
+                 */
                 const ParallelParams &pparams = job.get_parallel_params();
-                lua_clone->call_shade(pparams.bytecode, pparams.u, pparams.v, pparams.x, pparams.y, pparams.w, pparams.h, pparams.image_handle);
-
-                if (lua_clone->err_log.size() > 0 && app.lua.err_log.size() < MAX_ERR_LOG_SIZE)
-                {
-                    std::lock_guard<std::mutex> lk(app.mu);
-                    for (int i = 0; i < lua_clone->err_log.size(); i++)
-                    {
-                        app.lua.err_log.push_back(lua_clone->err_log[i]);
-                    }
-                    lua_clone->err_log.clear();
-                }
+                lua_clone->call_shade(pparams.src, pparams.u, pparams.v, pparams.x, pparams.y, pparams.w, pparams.h);
 
                 break;
             }
@@ -435,18 +432,34 @@ void App::queue_single_job(const Job &job)
     cv.notify_one();
 }
 
-void App::queue_batch_job(int w, int h, const std::string &bytecode, int image_handle, bool wait_until_finish)
+void App::queue_batch_job(int w, int h, const std::string &path, bool wait_until_finish)
 {
     {
         std::lock_guard<std::mutex> lk(mu);
         batch_job_count += w * h;
         done_job_count = 0;
+
+        // Read the source code.
+        std::ifstream reader(path);
+        if (!reader.good())
+        {
+            std::stringstream ss;
+            ss << "Error: cannot load file: " << path;
+            res()->report_error(ss.str());
+            batch_job_count = 0;
+            done_job_count = 0;
+            return;
+        }
+
+        std::stringstream ss;
+        ss << reader.rdbuf();
+
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
             {
                 float u = ((float) x + 0.5f) / w, v = ((float) y + 0.5f) / h;
-                Job job(JobType::ExecuteParallel, ParallelParams(u, v, x, y, w, h, bytecode, image_handle));
+                Job job(JobType::ExecuteParallel, ParallelParams(u, v, x, y, w, h, ss.str()));
                 jobs.push(job);
             }
         }

@@ -20,7 +20,6 @@
 #include "imagegl.h"
 #include "luaenv.h"
 #define MAX_INPUT_CHAR_LENGTH 256
-#define MAX_ERR_LOG_SIZE 256
 
 /**
  * App manages both the OpenGL context and the Lua context. Basically the user interface.
@@ -52,7 +51,7 @@ private:
     void render_ui();
     void launch_new_thread();
     void queue_single_job(const Job &job);
-    void queue_batch_job(int w, int h, const std::string &bytecode, int image_handle, bool wait_until_finish);
+    void queue_batch_job(int w, int h, const std::string &path, bool wait_until_finish);
 
     /**
      * @returns if a batch job is launched at the moment.

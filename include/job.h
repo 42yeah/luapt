@@ -15,20 +15,19 @@ enum class JobType
 
 struct ParallelParams
 {
-    ParallelParams() : u(0.0f), v(0.0f), x(0), y(0), w(0), h(0), bytecode(""), image_handle(-1)
+    ParallelParams() : u(0.0f), v(0.0f), x(0), y(0), w(0), h(0), src("")
     {
 
     }
 
-    ParallelParams(float u, float v, int x, int y, int w, int h, const std::string &bytecode, int image_handle) : u(u), v(v), x(x), y(y), w(w), h(h), bytecode(bytecode), image_handle(image_handle)
+    ParallelParams(float u, float v, int x, int y, int w, int h, const std::string &src) : u(u), v(v), x(x), y(y), w(w), h(h), src(src)
     {
 
     }
 
     float u, v;
     int x, y, w, h;
-    std::string bytecode;
-    int image_handle;
+    std::string src;
 };
 
 /**
