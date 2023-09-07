@@ -21,6 +21,7 @@ extern "C"
 #include <mutex>
 #include "image.h"
 #include "model.h"
+#include "luamath.h"
 #define MAX_ERR_LOG_SIZE 128
 
 /**
@@ -92,40 +93,10 @@ private:
     std::mutex mu;
 };
 
+Resources *res(); // VERY shorthand function to get the Lua instance.
 
 extern "C"
 {
-    Resources *res(); // VERY shorthand function to get the Lua instance.
-
-    /**
-     * BEGIN
-     * A more boring and vanilla triangle definition.
-     */
-    typedef struct
-    {
-        float x;
-        float y;
-        float z;
-    } Vec3C;
-
-    typedef struct
-    {
-        float u, v;
-    } Vec2C;
-
-    typedef struct
-    {
-        Vec3C position;
-        Vec3C normal;
-        Vec2C tex_coord;
-    } VertexC;
-
-    typedef struct
-    {
-        VertexC a, b, c;
-    } TriC;
-    // END boring triangle definition //
-
     // Images
     Image *make_image(int width, int height);
     void set_pixel(Image *img, int x, int y, float r, float g, float b);

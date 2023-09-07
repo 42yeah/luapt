@@ -1,39 +1,11 @@
 -- Name inspiration drawn from OCaml.
 
-ffi = require("ffi")
+ffi = require "ffi"
+require "lib/vector"
 
 ffi.cdef[[
     typedef struct Image Image;
     typedef struct Model Model;
-
-    /**
-     * BEGIN
-     * A more boring and vanilla triangle definition.
-     */
-    typedef struct
-    {
-        float x;
-        float y;
-        float z;
-    } Vec3C;
-
-    typedef struct
-    {
-        float u, v;
-    } Vec2C;
-
-    typedef struct
-    {
-        Vec3C position;
-        Vec3C normal;
-        Vec2C tex_coord;
-    } VertexC;
-
-    typedef struct
-    {
-        VertexC a, b, c;
-    } TriC;
-    // END boring triangle definition //
 
     // Images
     Image *make_image(int width, int height);
@@ -60,3 +32,22 @@ ffi.cdef[[
      */
     void shade(int width, int height, const char *path);
 ]]
+
+make_image = ffi.C.make_image
+set_pixel = ffi.C.set_pixel
+save_image = ffi.C.save_image
+free_image = ffi.C.free_image
+
+make_model = ffi.C.make_model
+model_tri_count = ffi.C.model_tri_count
+model_get_tri = ffi.C.model_get_tri
+free_model = ffi.C.free_model
+
+inventory_add = ffi.C.inventory_add
+inventory_get = ffi.C.inventory_get
+inventory_clear = ffi.C.inventory_clear
+
+shade = ffi.C.shade
+
+-- pparams contains:
+-- x, y, u, v, w, h

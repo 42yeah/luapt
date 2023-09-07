@@ -2,10 +2,12 @@ require "lib/pervasives"
 
 -- Try to load some model
 
-im = ffi.C.make_image(300, 300)
-ffi.C.inventory_add("img", im)
+local im = make_image(300, 300)
+inventory_add("img", im)
 
-ffi.C.shade(300, 300, "ffitestp.lua")
+shade(300, 300, "ffitestp.lua")
+
+inventory_clear()
 
 --
 -- for y = 0, 300 do

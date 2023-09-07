@@ -79,13 +79,18 @@ int generate_test_gradient_image(lua_State *l)
 
 void Resources::report_error(const std::string &msg)
 {
+    if (msg.empty())
+    {
+        return;
+    }
+
     std::lock_guard<std::mutex> lk(mu);
     if (err_log.size() > MAX_ERR_LOG_SIZE)
     {
         // Ditch the NEW error log
         return;
     }
-    err_log.push_back(msg);
+    err_log.push_back(msg + "##err" + std::to_string(err_log.size()));
     std::cout << "ERROR: " << msg << std::endl;
 }
 

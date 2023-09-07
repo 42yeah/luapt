@@ -1,8 +1,14 @@
-ffi = require "ffi"
+// Homemade vector library.
+// SPDX-FileCopyrightText: 2023 42yeah <email>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#ifndef LUAMATH_H
+#define LUAMATH_H
 
 
-ffi.cdef[[
-    /**
+extern "C"
+{
+     /**
      * BEGIN
      * A more boring and vanilla triangle definition.
      */
@@ -42,16 +48,6 @@ ffi.cdef[[
     Vec3C nor3(const Vec3C &a);
     float mix(float a, float b, float val);
     Vec3C mix3(const Vec3C &a, const Vec3C &b, float val);
-]]
+}
 
-vec3 = ffi.C.vec3
-add3 = ffi.C.add3
-sub3 = ffi.C.sub3
-dot3 = ffi.C.dot3
-mul3 = ffi.C.mul3
-scl3 = ffi.C.scl3
-cross = ffi.C.cross
-len3 = ffi.C.len3
-nor3 = ffi.C.nor3
-mix = ffi.C.mix
-mix3 = ffi.C.mix3
+#endif // LUAMATH_H
