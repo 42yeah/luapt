@@ -5,7 +5,7 @@ local im = inventory_get("img")
 local model = inventory_get("model")
 
 local uv = vec2(pparams.u * 2.0 - 1.0, pparams.v * 2.0 - 1.0)
-local ro = vec3(0, 2, -3)
+local ro = vec3(2, 2, -1)
 local center = vec3(0, 0, 0)
 local front = nor3(sub3(center, ro))
 local right = nor3(cross(front, vec3(0, 1, 0)))
@@ -14,10 +14,12 @@ local up = nor3(cross(right, front))
 local rd = nor3(add3(add3(scl3(right, uv.u), scl3(up, uv.v)), scl3(front, 1)))
 
 local mtc = model_tri_count(model)
-for i = 0, mtc do
+for i = 0, mtc - 1 do
     local tri = model_get_tri(model, i)
-    if intersect(ro, rd, tri, 0.01, 100.0) then
-        set_pixel(im, pparams.x, pparams.y, 1, 0, 1)
+    -- We will check both methods
+    local uvt = intersect(ro, rd, tri, 0.01, 100.0)
+    if uvt ~= nil then
+        set_pixel(im, pparams.x, pparams.y, 1.0, 0.5, 0.0)
         return
     end
 end

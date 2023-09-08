@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
     {
         App app(window);
 
+        assert(app.init() && "App initialization failed.");
         if (argc != 1)
         {
             std::stringstream joined;
@@ -46,9 +47,9 @@ int main(int argc, char *argv[])
                 }
                 joined << argv[i];
             }
+            app.set_script_path(joined.str());
         }
 
-        assert(app.init() && "App initialization failed.");
         app.run();
     }
 

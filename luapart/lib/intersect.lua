@@ -2,7 +2,8 @@ require "lib/vector"
 local pprint = require "lib/pprint"
 
 -- Check if a ray situated at ro with direction rd intersects with triangle tri.
-function intersect(ro, rd, tri, tmin, tmax)
+-- The brute force method
+function intersect_bf(ro, rd, tri, tmin, tmax)
     -- Calculate plane N^T x = c
     local c = dot3(tri.a.position, tri.a.normal)
     -- <N^T, d>
@@ -35,5 +36,46 @@ function intersect(ro, rd, tri, tmin, tmax)
         return nil
     end
 
-    return t
+    return vec3(u, v, t)
 end
+
+-- The Moller-Trumbore method
+function intersect_mt(ro, rd, tri, tmin, tmax)
+    local e1 = sub3(tri.b.position, tri.a.position)
+    local e2 = sub3(tri.c.position, tri.a.position)
+
+    local pvec = cross(rd, e2)
+    local det = dot3(e1, pvec)
+
+    -- Are they almost parallel?
+    if (math.abs(det) < 0.0001) then
+        return nil
+    end
+
+    local inv = 1.0 / det
+    local tvec = sub3(ro, tri.a.position)
+    local u = dot3(pvec, tvec) * inv
+    if u < 0 or u > 1 then
+        return nil
+    end
+
+    local qvec = cross(tvec, e1)
+    local v = dot3(rd, qvec) * inv
+
+    if v < 0 or u + v > 1 then
+        return nil
+    end
+
+    local t = dot3(e2, qvec) * inv
+    if t < tmin or t > tmax then
+        return nil
+    end
+
+    return vec3(u, v, t)
+end
+
+function intersect_box(ro, rd, box)
+    return nil
+end
+
+intersect = intersect_mt

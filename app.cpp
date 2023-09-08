@@ -5,6 +5,7 @@
 #include "app.h"
 #include <iostream>
 #include <cassert>
+#include <cstring>
 #include <sstream>
 #include <imgui.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -13,7 +14,7 @@
 
 int thread_id_counter = 0;
 
-App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), done_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), viewing_image_idx(-1), viewing_model_idx(-1), display_rect(nullptr), image_viewing_shader(nullptr), showing_image(nullptr)
+App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), done_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), viewing_image_idx(-1), viewing_model_idx(-1), viewing_bvh_idx(-1), display_rect(nullptr), image_viewing_shader(nullptr), showing_image(nullptr)
 {
 
 }
@@ -170,11 +171,12 @@ void App::render_ui()
             char name[MAX_INPUT_CHAR_LENGTH] = { 0 };
             for (int i = 0; i < res()->images.size(); i++)
             {
-                std::sprintf(name, "Image %d", i);
+                std::sprintf(name, "Image %d", res()->images[i]->id());
                 if (ImGui::Selectable(name, viewing_image_idx == i))
                 {
                     viewing_image_idx = i;
                     viewing_model_idx = -1;
+                    viewing_bvh_idx = -1;
                 }
             }
             ImGui::EndListBox();
@@ -184,12 +186,29 @@ void App::render_ui()
             char name[MAX_INPUT_CHAR_LENGTH] = { 0 };
             for (int i = 0; i < res()->models.size(); i++)
             {
-                std::sprintf(name, "Scene %d", i);
+                std::sprintf(name, "Scene %d", res()->models[i]->id());
                 if (ImGui::Selectable(name, viewing_model_idx == i))
                 {
                     // Show the scene
                     viewing_model_idx = i;
                     viewing_image_idx = -1;
+                    viewing_bvh_idx = -1;
+                }
+            }
+            ImGui::EndListBox();
+        }
+        if (ImGui::BeginListBox("BVHs"))
+        {
+            char name[MAX_INPUT_CHAR_LENGTH] = { 0 };
+            for (int i = 0; i < res()->bvhs.size(); i++)
+            {
+                std::sprintf(name, "BVH %d", res()->bvhs[i]->id());
+                if (ImGui::Selectable(name, viewing_bvh_idx == i))
+                {
+                    // Show the scene
+                    viewing_model_idx = -1;
+                    viewing_image_idx = -1;
+                    viewing_bvh_idx = -i;
                 }
             }
             ImGui::EndListBox();
@@ -262,7 +281,6 @@ void App::render_ui()
         ImGui::Text("Worker stats");
         if (ImGui::BeginTable("stats", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
         {
-
             ImGui::TableSetupColumn("Worker ID");
             ImGui::TableSetupColumn("Idleness");
             ImGui::TableHeadersRow();
@@ -284,6 +302,24 @@ void App::render_ui()
                 }
             }
             ImGui::EndTable();
+        }
+        if (ImGui::Button("Wipe worker Lua states") && !busy)
+        {
+            for (int i = 0; i < worker_stats.size(); i++)
+            {
+                Job j(JobType::Reset, ParallelParams(), "", "", worker_stats[i].id);
+                queue_single_job(j);
+            }
+            std::lock_guard<std::mutex> lk(mu);
+            batch_job_count = worker_stats.size();
+            done_job_count = 0;
+        }
+        if (ImGui::Button("Abort"))
+        {
+            std::lock_guard<std::mutex> lk(mu);
+            jobs = std::queue<Job>(); // Emergency stop
+            batch_job_count = 0;
+            done_job_count = 0;
         }
     }
     ImGui::End();
@@ -327,16 +363,12 @@ void App::launch_new_thread()
 
 void App::worker_thread(App &app, int thread_id)
 {
-    std::shared_ptr<Lua> lua_clone = nullptr;
+    std::shared_ptr<Lua> lua_clone = std::make_shared<Lua>();
     app.worker_stats[thread_id] = WorkerStats{};
     WorkerStats &me = app.worker_stats[thread_id];
 
-    // Acquire a lua clone (for multithreading)
-    // Because of tens of thousands of weird data racing stuffs, we will be creating brand new copies here
     {
         std::lock_guard<std::mutex> lk(app.mu);
-        lua_clone = std::make_shared<Lua>();
-
         me.id = thread_id;
         me.alive = true;
         me.current_job = nullptr;
@@ -404,6 +436,10 @@ void App::worker_thread(App &app, int thread_id)
 
                 break;
             }
+
+            case JobType::Reset:
+                lua_clone = std::make_shared<Lua>();
+                break;
         }
 
         {
@@ -411,8 +447,14 @@ void App::worker_thread(App &app, int thread_id)
             me.current_job = nullptr;
             me.idle = true;
             app.done_job_count++;
+            // Clamp the done_job_count to avoid unknown state.
+            if (app.done_job_count > app.batch_job_count)
+            {
+                app.done_job_count = app.batch_job_count;
+            }
 
-            if (app.done_job_count + 1 >= app.batch_job_count)
+            // If job is done, or this is a ID-specific job, we will have to notify everyone so that they know the next task is coming
+            if (app.done_job_count + 1 >= app.batch_job_count || job.get_target_worker() != -1)
             {
                 app.cv.notify_all();
             }
@@ -474,6 +516,11 @@ void App::queue_batch_job(int w, int h, const std::string &path, bool wait_until
             return !alive || (batch_job_count <= done_job_count + 1);
         });
     }
+}
+
+void App::set_script_path(const std::string &path)
+{
+    std::strncpy(this->current_script_path, path.c_str(), std::min(MAX_INPUT_CHAR_LENGTH, (int) path.size()));
 }
 
 bool App::is_busy()

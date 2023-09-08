@@ -43,6 +43,8 @@ ffi.cdef[[
     Vec3C nor3(const Vec3C &a);
     float mix(float a, float b, float val);
     Vec3C mix3(const Vec3C &a, const Vec3C &b, float val);
+    Vec3C min3(const Vec3C &a, const Vec3C &b);
+    Vec3C max3(const Vec3C &a, const Vec3C &b);
 ]]
 
 vec2 = ffi.C.vec2
@@ -57,3 +59,9 @@ len3 = ffi.C.len3
 nor3 = ffi.C.nor3
 mix = ffi.C.mix
 mix3 = ffi.C.mix3
+min3 = ffi.C.min3
+max3 = ffi.C.max3
+
+function vec3str(vec3)
+    return "("..vec3.x..", "..vec3.y..", "..vec3.z..")"
+end

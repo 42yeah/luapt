@@ -46,6 +46,11 @@ public:
 
     void run();
 
+    /**
+     * The main() function (or whoever creates App) has the option to set a script path.
+     */
+    void set_script_path(const std::string &path);
+
 private:
     void render_frame();
     void render_ui();
@@ -79,7 +84,7 @@ private:
     char current_script_path[MAX_INPUT_CHAR_LENGTH];
     char code_injection[MAX_INPUT_CHAR_LENGTH];
     std::vector<std::string> previous_scripts;
-    int viewing_image_idx, viewing_model_idx;
+    int viewing_image_idx, viewing_model_idx, viewing_bvh_idx;
 
     // Misc resources
     std::shared_ptr<ModelGL> display_rect; // The display rectangle used to show images

@@ -49,6 +49,8 @@ extern "C"
     Vec3C nor3(const Vec3C &a);
     float mix(float a, float b, float val);
     Vec3C mix3(const Vec3C &a, const Vec3C &b, float val);
+    Vec3C min3(const Vec3C &a, const Vec3C &b);
+    Vec3C max3(const Vec3C &a, const Vec3C &b);
 }
 
 #endif // LUAMATH_H

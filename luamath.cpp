@@ -5,6 +5,7 @@
 
 #include "luamath.h"
 #include <cmath>
+#include <algorithm>
 
 
 Vec2C vec2(float u, float v)
@@ -67,4 +68,14 @@ float mix(float a, float b, float val)
 Vec3C mix3(const Vec3C &a, const Vec3C &b, float val)
 {
     return Vec3C{ mix(a.x, b.x, val), mix(a.y, b.y, val), mix(a.z, b.z, val) };
+}
+
+Vec3C min3(const Vec3C &a, const Vec3C &b)
+{
+    return Vec3C{ std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z) };
+}
+
+Vec3C max3(const Vec3C &a, const Vec3C &b)
+{
+    return Vec3C{ std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z) };
 }

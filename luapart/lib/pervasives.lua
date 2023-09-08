@@ -6,6 +6,7 @@ require "lib/vector"
 ffi.cdef[[
     typedef struct Image Image;
     typedef struct Model Model;
+    typedef struct BVH BVH;
 
     // Images
     Image *make_image(int width, int height);
@@ -19,6 +20,9 @@ ffi.cdef[[
     TriC *model_get_tri(const Model *model, int index);
     void free_model(Model *model);
 
+    // BVHs
+    BVH *make_bvh(Model *model);
+
     // Inventory
     void inventory_add(const char *k, void *v);
     void *inventory_get(const char *k);
@@ -31,6 +35,7 @@ ffi.cdef[[
      * is easier, offers finer-grained control, and much more safer.
      */
     void shade(int width, int height, const char *path);
+    void debug();
 ]]
 
 make_image = ffi.C.make_image
@@ -43,11 +48,15 @@ model_tri_count = ffi.C.model_tri_count
 model_get_tri = ffi.C.model_get_tri
 free_model = ffi.C.free_model
 
+make_bvh = ffi.C.make_bvh
+
 inventory_add = ffi.C.inventory_add
 inventory_get = ffi.C.inventory_get
 inventory_clear = ffi.C.inventory_clear
 
 shade = ffi.C.shade
+debug = ffi.C.debug
 
 -- pparams contains:
 -- x, y, u, v, w, h
+

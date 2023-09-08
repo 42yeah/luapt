@@ -22,6 +22,7 @@ extern "C"
 #include "image.h"
 #include "model.h"
 #include "luamath.h"
+#include "bbox.h"
 #define MAX_ERR_LOG_SIZE 128
 
 /**
@@ -68,6 +69,7 @@ public:
 
     std::vector<std::shared_ptr<Image> > images;
     std::vector<std::shared_ptr<Model> > models;
+    std::vector<std::shared_ptr<BVH> > bvhs;
 
     // We will try to call this when we need to aunch w*h number of threads.
     // Parameters: w, h, and script path
@@ -109,6 +111,9 @@ extern "C"
     TriC *model_get_tri(const Model *model, int index);
     void free_model(Model *model);
 
+    // BVHs
+    BVH *make_bvh(Model *model);
+
     // Inventory
     void inventory_add(const char *k, void *v);
     void *inventory_get(const char *k);
@@ -121,6 +126,12 @@ extern "C"
      * is easier, offers finer-grained control, and much more safer.
      */
     void shade(int width, int height, const char *path);
+
+    /**
+     * Trigger the debugger.
+     * Insert your own breakpoint here!
+     */
+    void debug();
 }
 
 #endif // LUA_H

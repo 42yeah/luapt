@@ -10,7 +10,7 @@
 
 enum class JobType
 {
-    Nothing, Suicide, RunScript, Execute, ExecuteParallel
+    Nothing, Suicide, RunScript, Execute, ExecuteParallel, Reset
 };
 
 struct ParallelParams

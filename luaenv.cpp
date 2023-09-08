@@ -247,6 +247,8 @@ int model_tri_count(const Model *model)
 
 TriC *model_get_tri(const Model *model, int index)
 {
+    assert(index >= 0 && index < model->get_num_tris() && "Model index out of bounds");
+
     // Don't worry honey, it's perfectly fine... maybe.
     return (TriC *) &model->get_triangle(index);
 }
@@ -260,6 +262,22 @@ void free_model(Model *model)
     });
     assert(it != r->models.end() && "Non-existent model");
     r->models.erase(it, it + 1); // WARNING: img now becomes a dangling pointer
+}
+
+BVH *make_bvh(Model *model)
+{
+    Resources *r = res();
+
+    // I guess we will just have to locate the shared pointer ourselves
+    auto pos = std::find_if(r->models.begin(), r->models.end(), [&](std::shared_ptr<Model> m)
+    {
+        return m.get() == model;
+    });
+    assert(pos != r->models.end() && "The model pointer is not present in resources");
+
+    std::shared_ptr<BVH> bvh = std::make_shared<BVH>(*pos);
+    r->bvhs.push_back(bvh);
+    return bvh.get();
 }
 
 void shade(int width, int height, const char *path)
@@ -280,4 +298,10 @@ void *inventory_get(const char *k)
 void inventory_clear()
 {
     res()->inventory_clear();
+}
+
+void debug()
+{
+    Resources *r = res();
+    std::cout << "Whelp." << std::endl;
 }
