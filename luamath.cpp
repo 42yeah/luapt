@@ -7,6 +7,11 @@
 #include <cmath>
 
 
+Vec2C vec2(float u, float v)
+{
+    return Vec2C{ u, v };
+}
+
 Vec3C vec3(float x, float y, float z)
 {
     return Vec3C{ x, y, z };

@@ -27,5 +27,3 @@ for i = 1, 200 do
         break
     end
 end
-
-

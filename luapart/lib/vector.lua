@@ -32,6 +32,7 @@ ffi.cdef[[
     // END boring triangle definition //
 
     Vec3C vec3(float x, float y, float z);
+    Vec2C vec2(float u, float v);
     Vec3C add3(const Vec3C &a, const Vec3C &b);
     Vec3C sub3(const Vec3C &a, const Vec3C &b);
     float dot3(const Vec3C &a, const Vec3C &b);
@@ -44,6 +45,7 @@ ffi.cdef[[
     Vec3C mix3(const Vec3C &a, const Vec3C &b, float val);
 ]]
 
+vec2 = ffi.C.vec2
 vec3 = ffi.C.vec3
 add3 = ffi.C.add3
 sub3 = ffi.C.sub3

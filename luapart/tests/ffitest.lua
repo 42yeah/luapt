@@ -3,6 +3,7 @@ require "lib/pervasives"
 -- Try to load some model
 
 local im = make_image(300, 300)
+local model = make_model("torus.obj")
 inventory_add("img", im)
 
 shade(300, 300, "ffitestp.lua")

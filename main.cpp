@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cassert>
+#include <sstream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "app.h"
@@ -14,7 +15,7 @@ constexpr int width = 1280, height = 720;
  * The purpose of the main() function is to start up a window, then move it to App(), which manages everything, including
  * the UI, and the Lua environment.
  */
-int main()
+int main(int argc, char *argv[])
 {
     assert(glfwInit() == GLFW_TRUE && "Cannot initialize GLFW");
 
@@ -33,6 +34,20 @@ int main()
 
     {
         App app(window);
+
+        if (argc != 1)
+        {
+            std::stringstream joined;
+            for (int i = 1; i < argc; i++)
+            {
+                if (i != 1)
+                {
+                    joined << " ";
+                }
+                joined << argv[i];
+            }
+        }
+
         assert(app.init() && "App initialization failed.");
         app.run();
     }

@@ -38,6 +38,7 @@ extern "C"
     // END boring triangle definition //
 
     Vec3C vec3(float x, float y, float z);
+    Vec2C vec2(float u, float v);
     Vec3C add3(const Vec3C &a, const Vec3C &b);
     Vec3C sub3(const Vec3C &a, const Vec3C &b);
     float dot3(const Vec3C &a, const Vec3C &b);
