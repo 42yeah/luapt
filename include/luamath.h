@@ -51,6 +51,13 @@ extern "C"
     Vec3C mix3(const Vec3C &a, const Vec3C &b, float val);
     Vec3C min3(const Vec3C &a, const Vec3C &b);
     Vec3C max3(const Vec3C &a, const Vec3C &b);
+
+    // Boring BBox definition
+    typedef struct
+    {
+        Vec3C min, max;
+    } BBoxC;
+    BBoxC bbox();
 }
 
 #endif // LUAMATH_H

@@ -6,6 +6,7 @@
 #include "luamath.h"
 #include <cmath>
 #include <algorithm>
+#include "bbox.h"
 
 
 Vec2C vec2(float u, float v)
