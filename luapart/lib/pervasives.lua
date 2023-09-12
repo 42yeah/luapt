@@ -8,6 +8,17 @@ ffi.cdef[[
     typedef struct Model Model;
     typedef struct BVH BVH;
 
+    typedef struct
+    {
+        float metallic;
+        float ior;
+        Vec3C emission;
+        Vec3C ambient;
+        Vec3C diffuse;
+        Vec3C normal_bump;
+        Vec3C specular;
+    } HitInfo;
+
     // Images
     Image *make_image(int width, int height);
     void set_pixel(Image *img, int x, int y, float r, float g, float b);
@@ -20,6 +31,7 @@ ffi.cdef[[
     int model_tri_count(const Model *model);
     TriC *model_get_tri(const Model *model, int index);
     void free_model(Model *model);
+    HitInfo model_hit_info(Model *model, int material_id, Vec2C uv);
 
     // BVHs
     BVH *make_bvh(Model *model);
@@ -68,6 +80,7 @@ make_model = ffi.C.make_model
 model_tri_count = ffi.C.model_tri_count
 model_get_tri = ffi.C.model_get_tri
 free_model = ffi.C.free_model
+model_hit_info = ffi.C.model_hit_info
 
 make_bvh = ffi.C.make_bvh
 bvh_get_tri = ffi.C.bvh_get_tri

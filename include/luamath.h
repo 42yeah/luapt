@@ -29,6 +29,7 @@ extern "C"
         Vec3C position;
         Vec3C normal;
         Vec2C tex_coord;
+        int material_id;
     } VertexC;
 
     typedef struct

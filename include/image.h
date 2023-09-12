@@ -69,7 +69,7 @@ public:
     /**
      * Default constructor
      */
-    Image() : w(0), h(0), ch(4), image(nullptr), id_(BaseImage::image_id_counter++), initialized(false)
+    Image() : w(0), h(0), ch(4), id_(BaseImage::image_id_counter++), image(nullptr), initialized(false)
     {
 
     }

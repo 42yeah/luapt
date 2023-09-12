@@ -9,6 +9,27 @@
 #include <glm/glm.hpp>
 #include <tiny_obj_loader.h>
 #include "image.h"
+#include "luamath.h"
+
+/**
+ * HitInfo describes the hit surface.
+ * We can't have high-level definition here, it has to be extern C -
+ * this looks ugly but I suppose there's nothing we can do. I don't want that many copies
+ */
+extern "C"
+{
+    struct HitInfo
+    {
+        float metallic;
+        float ior;
+        Vec3C emission;
+        Vec3C ambient;
+        Vec3C diffuse;
+        Vec3C normal_bump;
+        Vec3C specular;
+    };
+}
+
 
 /**
  * Material describes what the "material" is. It encloses textures and other things as well.
@@ -30,7 +51,7 @@ public:
     /**
      * Copy constructor
      */
-    Material(const Material& other) = delete;
+    Material(const Material& other) = default;
 
     /**
      * Destructor
@@ -46,26 +67,29 @@ public:
     RGB<float> get_normal_bump(const glm::vec2 &uv) const;
     RGB<float> get_specular(const glm::vec2 &uv) const;
 
+    HitInfo get_hit_info(const glm::vec2 &uv) const;
+
     int id() const;
 
 private:
     std::string material_name;
 
     float metallic;
-    std::shared_ptr<FloatImage> metallic_tex;
+    std::shared_ptr<U8Image> metallic_tex;
 
     float ior;
     RGB<float> emission;
-    std::shared_ptr<FloatImage> emissive_tex;
+    std::shared_ptr<U8Image> emissive_tex;
     RGB<float> ambient;
-    std::shared_ptr<FloatImage> ambient_tex;
+    std::shared_ptr<U8Image> ambient_tex;
     RGB<float> diffuse;
-    std::shared_ptr<FloatImage> diffuse_tex;
-    std::shared_ptr<FloatImage> normal_tex;
+    std::shared_ptr<U8Image> diffuse_tex;
+    std::shared_ptr<U8Image> normal_tex;
     RGB<float> specular;
-    std::shared_ptr<FloatImage> specular_tex;
+    std::shared_ptr<U8Image> specular_tex;
 
     int id_;
 };
+
 
 #endif // MATERIAL_H

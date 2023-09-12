@@ -7,11 +7,12 @@ function get_sky(rd)
 end
 
 local im = inventory_get("img")
+local model = inventory_get("model")
 local bvh = inventory_get("bvh")
 
 local uv = vec2(pparams.u * 2.0 - 1.0, pparams.v * 2.0 - 1.0)
-local ro = vec3(2, 2, 2)
-local center = vec3(0, 0, 0)
+local ro = vec3(0.1, 0.6, 3)
+local center = vec3(0, 0.5, 0)
 local front = nor3(sub3(center, ro))
 local right = nor3(cross(front, vec3(0, 1, 0)))
 local up = nor3(cross(right, front))
@@ -67,12 +68,13 @@ if uvt ~= nil then
 
     local w = 1 - uvt.x - uvt.y
     local n_bary = add3(add3(scl3(tri.b.normal, uvt.x), scl3(tri.c.normal, uvt.y)), scl3(tri.a.normal, w))
+    local info = model_hit_info(model, tri.a.material_id, vec2(0.0, 0.0))
 
     local p = add3(add3(ro, scl3(rd, uvt.z)), scl3(n_bary, 0.01))
     local refl = add3(add3(rd, n_bary), n_bary)
     local sky = min3(vec3(1.0, 1.0, 1.0), get_sky(refl))
 
-    set_pixel(im, pparams.x, pparams.y, sky.x, sky.y, sky.z)
+    set_pixel(im, pparams.x, pparams.y, info.diffuse.x, info.diffuse.y, info.diffuse.z)
 else
     local c = get_sky(rd)
     set_pixel(im, pparams.x, pparams.y, c.x, c.y, c.z)

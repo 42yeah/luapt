@@ -111,6 +111,7 @@ extern "C"
     int model_tri_count(const Model *model);
     TriC *model_get_tri(const Model *model, int index);
     void free_model(Model *model);
+    HitInfo model_hit_info(Model *model, int material_id, Vec2C uv);
 
     // BVHs
     BVH *make_bvh(Model *model);

@@ -357,3 +357,8 @@ void debug()
     Resources *r = res();
     std::cout << "Whelp." << std::endl;
 }
+
+HitInfo model_hit_info(Model *model, int material_id, Vec2C uv)
+{
+    return model->get_hit_info(material_id, *((glm::vec2 *) &uv));
+}

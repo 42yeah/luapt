@@ -14,6 +14,7 @@ struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 tex_coord;
+    int material_id; // Flyweight material ID
 };
 
 struct Triangle {
@@ -48,6 +49,10 @@ public:
 
     int id() const;
 
+    /**
+     * Load a model from path, using tinyobjloader.
+     * @param path the path to load the model.
+     */
     bool load(const std::string &path, const std::string &mtl_base_dir = "");
 
     int get_num_verts() const;
@@ -57,6 +62,8 @@ public:
 
     const Triangle &get_triangle(int index) const;
     const std::vector<Triangle> &get_all_triangles() const;
+
+    HitInfo get_hit_info(int material_id, const glm::vec2 &uv) const;
 
 private:
     int id_;

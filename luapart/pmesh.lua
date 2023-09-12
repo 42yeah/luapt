@@ -4,7 +4,7 @@ require "lib/intersect"
 require "lib/bvh"
 
 inventory_clear()
-local model = make_model("spot.obj", "cornell")
+local model = make_model("cornell/CornellBox-Sphere.obj", "cornell")
 local bvh = make_bvh(model)
 
 bvh_construct(bvh, 0, 0, bvh_tri_count(bvh) - 1)

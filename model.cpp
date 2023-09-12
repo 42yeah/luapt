@@ -54,15 +54,26 @@ bool Model::load(const std::string& path, const std::string &mtl_base_dir)
         {
             assert(mesh.num_face_vertices[j] == 3 && "Non-triangular meshes are not supported.");
             Vertex vs[3];
+            int material_id = mesh.material_ids[j];
 
             for (int k = 0; k < mesh.num_face_vertices[j]; k++)
             {
                 auto idx = mesh.indices[offset + k];
-                Vertex v = {
-                    glm::vec3(attrib.vertices[3 * idx.vertex_index + 0], attrib.vertices[3 * idx.vertex_index + 1], attrib.vertices[3 * idx.vertex_index + 2]),
-                    glm::vec3(attrib.normals[3 * idx.normal_index + 0], attrib.normals[3 * idx.normal_index + 1], attrib.normals[3 * idx.normal_index + 2]),
-                    glm::vec2(0.0f)
-                };
+
+                Vertex v = { glm::vec3(0.0f), glm::vec3(0.0f), glm::vec2(0.0f), material_id };
+                if (idx.vertex_index != -1)
+                {
+                    v.position = glm::vec3(attrib.vertices[3 * idx.vertex_index + 0], attrib.vertices[3 * idx.vertex_index + 1], attrib.vertices[3 * idx.vertex_index + 2]);
+                }
+                if (idx.normal_index != -1)
+                {
+                    v.normal = glm::vec3(attrib.normals[3 * idx.normal_index + 0], attrib.normals[3 * idx.normal_index + 1], attrib.normals[3 * idx.normal_index + 2]);
+                }
+                if (idx.texcoord_index != -1)
+                {
+                    v.tex_coord = glm::vec2(attrib.texcoords[2 * idx.texcoord_index + 0], attrib.texcoords[2 * idx.texcoord_index + 1]);
+                }
+
                 if (idx.texcoord_index >= 0)
                 {
                     v.tex_coord = glm::vec2(attrib.texcoords[2 * idx.texcoord_index + 0], attrib.texcoords[2 * idx.texcoord_index + 1]);
@@ -78,7 +89,8 @@ bool Model::load(const std::string& path, const std::string &mtl_base_dir)
 
     for (int i = 0; i < materials.size(); i++)
     {
-        std::cout << "Material: " << materials[i].name << std::endl;
+        Material m(materials[i]);
+        mat.push_back(m);
     }
 
     initialized = true;
@@ -124,4 +136,10 @@ const std::vector<Triangle> &Model::get_all_triangles() const
     assert(initialized && "Model is not initialized yet.");
 
     return tri;
+}
+
+HitInfo Model::get_hit_info(int material_id, const glm::vec2 &uv) const
+{
+    assert(material_id >= 0 && material_id < mat.size() && "Material ID out of bounds");
+    return mat[material_id].get_hit_info(uv);
 }
