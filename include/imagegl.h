@@ -20,10 +20,11 @@ public:
      */
     ImageGL();
 
-    ImageGL(std::shared_ptr<Image> image);
+    ImageGL(std::shared_ptr<BaseImage> image);
 
-    bool import_from_image(const Image &image);
-    const std::shared_ptr<Image> get_base_image() const;
+    bool import_from_image(const BaseImage &image);
+
+    const std::shared_ptr<BaseImage> get_base_image() const;
     void bind() const;
 
     /**
@@ -39,7 +40,7 @@ public:
 private:
     bool initialized;
     GLuint texture;
-    std::shared_ptr<Image> image;
+    std::shared_ptr<BaseImage> image;
 };
 
 #endif // IMAGEGL_H

@@ -10,7 +10,7 @@ ImageGL::ImageGL() : initialized(false), texture(GL_NONE), image(nullptr)
 
 }
 
-ImageGL::ImageGL(std::shared_ptr<Image> image) : ImageGL()
+ImageGL::ImageGL(std::shared_ptr<BaseImage> image) : ImageGL()
 {
     if (image != nullptr)
     {
@@ -19,7 +19,7 @@ ImageGL::ImageGL(std::shared_ptr<Image> image) : ImageGL()
     }
 }
 
-bool ImageGL::import_from_image(const Image &image)
+bool ImageGL::import_from_image(const BaseImage &image)
 {
     initialized = false;
     if (texture == GL_NONE)
@@ -32,13 +32,25 @@ bool ImageGL::import_from_image(const Image &image)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.w, image.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.get());
+    if (image.unit_size() == sizeof(unsigned char))
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.get());
+    }
+    else if (image.unit_size() == sizeof(float))
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_FLOAT, image.get());
+    }
+    else
+    {
+        assert(false && "Unsupported base image");
+    }
+
     initialized = true;
 
     return true;
 }
 
-const std::shared_ptr<Image> ImageGL::get_base_image() const
+const std::shared_ptr<BaseImage> ImageGL::get_base_image() const
 {
     assert(initialized && "ImageGL is not initialized");
     return image;

@@ -14,7 +14,7 @@
 
 int thread_id_counter = 0;
 
-App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), done_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), viewing_image_idx(-1), viewing_model_idx(-1), viewing_bvh_idx(-1), display_rect(nullptr), image_viewing_shader(nullptr), showing_image(nullptr)
+App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), done_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), viewing_image_idx(-1), viewing_model_idx(-1), viewing_bvh_idx(-1), display_rect(nullptr), image_viewing_shader(nullptr), showing_image(nullptr), lua(std::make_shared<Lua>())
 {
 
 }
@@ -133,6 +133,7 @@ void App::render_frame()
     if (viewing_image_idx != -1)
     {
         // We are viewing an image. Sync that into our ImageGL, and pass that as uniform.
+
         showing_image->import_from_image(*res()->images[viewing_image_idx]);
         showing_image->bind();
         glActiveTexture(GL_TEXTURE0);
@@ -305,11 +306,13 @@ void App::render_ui()
         }
         if (ImGui::Button("Wipe worker Lua states") && !busy)
         {
+            lua = std::make_shared<Lua>();
             for (int i = 0; i < worker_stats.size(); i++)
             {
                 Job j(JobType::Reset, ParallelParams(), "", "", worker_stats[i].id);
                 queue_single_job(j);
             }
+
             std::lock_guard<std::mutex> lk(mu);
             batch_job_count = worker_stats.size();
             done_job_count = 0;
@@ -418,11 +421,11 @@ void App::worker_thread(App &app, int thread_id)
                 return;
 
             case JobType::RunScript:
-                app.lua.execute_file(job.get_script_path());
+                app.lua->execute_file(job.get_script_path());
                 break;
 
             case JobType::Execute:
-                app.lua.execute(job.get_code_injection());
+                app.lua->execute(job.get_code_injection());
                 break;
 
             case JobType::ExecuteParallel:

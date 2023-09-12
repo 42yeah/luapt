@@ -91,7 +91,7 @@ private:
     std::shared_ptr<ShaderGL> image_viewing_shader;
     std::shared_ptr<ImageGL> showing_image;
 
-    Lua lua;
+    std::shared_ptr<Lua> lua;
 };
 
 #endif // APP_H

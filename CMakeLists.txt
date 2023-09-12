@@ -7,7 +7,7 @@ option(USE_LUAJIT "Use LuaJIT" ON)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 
-add_executable(luapt main.cpp image.cpp luaenv.cpp tiny_obj_loader.cc model.cpp glad.c app.cpp modelgl.cpp job.cpp imagegl.cpp shadergl.cpp luamath.cpp bbox.cpp)
+add_executable(luapt main.cpp image.cpp luaenv.cpp tiny_obj_loader.cc model.cpp glad.c app.cpp modelgl.cpp job.cpp imagegl.cpp shadergl.cpp luamath.cpp bbox.cpp material.cpp)
 
 if (USE_LUAJIT)
     find_package(PkgConfig REQUIRED)

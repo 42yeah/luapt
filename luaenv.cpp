@@ -67,14 +67,10 @@ Lua::~Lua()
     }
 }
 
-int generate_test_gradient_image(lua_State *l)
+void generate_demo_image(int w, int h, const char *path)
 {
-    int w = lua_tointeger(l, 1);
-    int h = lua_tointeger(l, 2);
-    const char *filename = lua_tostring(l, 3);
-    std::shared_ptr<Image> img = generate_gradient_image(w, h);
-    img->save(filename);
-    return 0;
+    std::shared_ptr<U8Image> img = generate_gradient_image(w, h);
+    img->save(path);
 }
 
 void Resources::report_error(const std::string &msg)
@@ -194,28 +190,28 @@ void Resources::inventory_clear()
 
 
 // Images
-Image *make_image(int width, int height)
+U8Image *make_image(int width, int height)
 {
     Resources *r = res();
-    std::shared_ptr<Image> img = std::make_shared<Image>(width, height, 4);
+    std::shared_ptr<U8Image> img = std::make_shared<U8Image>(width, height, 4);
     r->images.push_back(img);
     return img.get();
 }
 
-void set_pixel(Image *img, int x, int y, float r, float g, float b)
+void set_pixel(U8Image *img, int x, int y, float r, float g, float b)
 {
-    img->set_rgb(x, y, ccomp(r), ccomp(g), ccomp(b));
+    img->set_rgb(x, y, float_to_u8(r), float_to_u8(g), float_to_u8(b));
 }
 
-bool save_image(Image *img, const char *path)
+bool save_image(U8Image *img, const char *path)
 {
     return img->save(path);
 }
 
-void free_image(Image *img)
+void free_image(U8Image *img)
 {
     Resources *r = res();
-    auto it = std::find_if(r->images.begin(), r->images.end(), [&](const std::shared_ptr<Image> im)
+    auto it = std::find_if(r->images.begin(), r->images.end(), [&](const std::shared_ptr<BaseImage> im)
     {
         return im.get() == img;
     });
@@ -225,10 +221,11 @@ void free_image(Image *img)
 
 
 // Models
-Model *make_model(const char *path)
+Model *make_model(const char *path, const char *mtl_base_path)
 {
     std::shared_ptr<Model> model = std::make_shared<Model>();
-    if (!model->load(path))
+    std::string base_path = mtl_base_path ? mtl_base_path : "";
+    if (!model->load(path, base_path))
     {
         return nullptr;
     }
@@ -278,6 +275,61 @@ BVH *make_bvh(Model *model)
     std::shared_ptr<BVH> bvh = std::make_shared<BVH>(*pos);
     r->bvhs.push_back(bvh);
     return bvh.get();
+}
+
+TriC *bvh_get_tri(const BVH *bvh, int index)
+{
+    assert(index >= 0 && index < bvh->get_num_triangles() && "BVH triangle index out of bounds");
+    return (TriC *) &bvh->get_triangle(index);
+}
+
+int bvh_tri_count(const BVH *bvh)
+{
+    return bvh->get_num_triangles();
+}
+
+int bvh_push_node(BVH *bvh, const BBox &bbox, int start, int size, int l, int r)
+{
+    return bvh->make_node(bbox, start, size, l, r);
+}
+
+int bvh_node_count(const BVH *bvh)
+{
+    return bvh->get_num_nodes();
+}
+
+const Node bvh_get_node(BVH *bvh, int index)
+{
+    assert(index >= 0 && index < bvh->get_num_nodes() && "BVH node index out of bounds");
+    return bvh->get_node(index);
+}
+
+void bvh_node_set_children(BVH *bvh, int who, int l, int r)
+{
+    bvh->set_children(who, l, r);
+}
+
+void free_bvh(BVH *bvh)
+{
+    Resources *r = res();
+    auto it = std::find_if(r->bvhs.begin(), r->bvhs.end(), [&](const std::shared_ptr<BVH> b)
+    {
+        return b.get() == bvh;
+    });
+    assert(it != r->bvhs.end() && "Non-existent BVH");
+    r->bvhs.erase(it, it + 1); // WARNING: bvh now becomes a dangling pointer
+}
+
+bool *make_partitioning_table(BVH *bvh)
+{
+    return new bool[bvh->get_num_triangles()];
+}
+
+int partition(BVH *bvh, bool *table, int begin, int end)
+{
+    int sep = bvh->partition(table, begin, end);
+    delete[] table;
+    return sep;
 }
 
 void shade(int width, int height, const char *path)

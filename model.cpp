@@ -76,6 +76,11 @@ bool Model::load(const std::string& path, const std::string &mtl_base_dir)
         }
     }
 
+    for (int i = 0; i < materials.size(); i++)
+    {
+        std::cout << "Material: " << materials[i].name << std::endl;
+    }
+
     initialized = true;
 
     return true;

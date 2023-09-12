@@ -45,6 +45,21 @@ ffi.cdef[[
     Vec3C mix3(const Vec3C &a, const Vec3C &b, float val);
     Vec3C min3(const Vec3C &a, const Vec3C &b);
     Vec3C max3(const Vec3C &a, const Vec3C &b);
+
+    // Boring BBox definition
+    typedef struct
+    {
+        Vec3C min, max;
+    } BBox;
+
+    typedef struct
+    {
+        BBox bbox;
+        int start, size;
+        int l, r; // Left child & right child
+    } Node;
+    BBox bbox();
+    void enclose(BBox &bbox, const Vec3C &p);
 ]]
 
 vec2 = ffi.C.vec2
@@ -61,7 +76,9 @@ mix = ffi.C.mix
 mix3 = ffi.C.mix3
 min3 = ffi.C.min3
 max3 = ffi.C.max3
+bbox = ffi.C.bbox
+enclose = ffi.C.enclose
 
-function vec3str(vec3)
+function vstr(vec3)
     return "("..vec3.x..", "..vec3.y..", "..vec3.z..")"
 end

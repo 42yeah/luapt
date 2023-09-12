@@ -1,5 +1,5 @@
 // Homemade vector library.
-// SPDX-FileCopyrightText: 2023 42yeah <email>
+// SPDX-FileCopyrightText: 2023 42yeah hey@42yeah.is
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef LUAMATH_H
@@ -56,8 +56,16 @@ extern "C"
     typedef struct
     {
         Vec3C min, max;
-    } BBoxC;
-    BBoxC bbox();
+    } BBox;
+
+    typedef struct
+    {
+        BBox bbox;
+        int start, size;
+        int l, r; // Left child & right child
+    } Node;
+    BBox bbox();
+    void enclose(BBox &bbox, const Vec3C &p);
 }
 
 #endif // LUAMATH_H

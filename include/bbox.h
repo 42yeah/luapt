@@ -9,27 +9,7 @@
 #include <vector>
 #include <memory>
 #include "model.h"
-
-/**
- * A simple bounding box.
- */
-struct BBox
-{
-    glm::vec3 min, max;
-
-    BBox();
-
-    void enclose(const glm::vec3 &p);
-
-    // We won't define the intersection function here - it's nontrivial.
-};
-
-struct Node
-{
-    BBox bbox;
-    size_t start, size;
-    size_t l, r; // Left child & right child
-};
+#include "luamath.h"
 
 /**
  * A Bounding Volume Hierarchy (BVH), used to accelerate pathtracing.
@@ -41,10 +21,20 @@ public:
 
     int id() const;
 
-    size_t make_node(const BBox &bbox, size_t start, size_t size, size_t l, size_t r);
-    Node &get_node(int index);
+    int make_node(const BBox &bbox, int start, int size, int l, int r);
+    const Node &get_node(int index) const;
+    void set_children(int who, int l, int r);
+    int get_num_nodes() const;
 
     const Triangle &get_triangle(int index) const;
+    int get_num_triangles() const;
+
+    /**
+     * Partition the table based on preds.
+     * If it is true, then it comes to the left side.
+     * Otherwise it goes to the right side.
+     */
+    int partition(bool *pred, int begin, int end);
 
 private:
     std::vector<const Triangle *> tri; // We will need to rearrange these triangles

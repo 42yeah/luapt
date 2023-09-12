@@ -4,39 +4,33 @@
 
 #include "bbox.h"
 #include <numbers>
+#include <algorithm>
+#include "luaenv.h"
 
 int bvh_id_counter = 0;
 
-BBox::BBox() : min(std::numeric_limits<float>::max()), max(std::numeric_limits<float>::lowest())
-{
-
-}
-
-void BBox::enclose(const glm::vec3 &p)
-{
-    min = glm::min(min, p);
-    max = glm::max(max, p);
-}
 
 BVH::BVH(std::shared_ptr<Model> model) : model(model), id_(bvh_id_counter++)
 {
     // First make an empty node to fit ALL triangles inside
 
-    BBox root_bbox;
-    for (const auto &t : model->get_all_triangles())
+    BBox root_bbox = bbox();
+    for (int i = 0; i < model->get_num_tris(); i++)
     {
-        root_bbox.enclose(t.a.position);
-        root_bbox.enclose(t.b.position);
-        root_bbox.enclose(t.c.position);
-        tri.push_back(&t);
+        TriC *t = model_get_tri(model.get(), i);
+        enclose(root_bbox, t->a.position);
+        enclose(root_bbox, t->b.position);
+        enclose(root_bbox, t->c.position);
+        tri.push_back(&model->get_triangle(i));
     }
+
     make_node(root_bbox, 0, tri.size(), 0, 0);
 }
 
-size_t BVH::make_node(const BBox &bbox, size_t start, size_t size, size_t l, size_t r)
+int BVH::make_node(const BBox &bbox, int start, int size, int l, int r)
 {
-    Node n{ bbox, start, size, l, r };
-    nodes.push_back(n);
+    Node node{ bbox, start, size, l, r };
+    nodes.push_back(node);
     return nodes.size() - 1;
 }
 
@@ -52,8 +46,52 @@ int BVH::id() const
     return id_;
 }
 
-Node &BVH::get_node(int index)
+const Node &BVH::get_node(int index) const
 {
     assert((index >= 0 || index < nodes.size()) && "Node index out of bound");
     return nodes[index];
+}
+
+void BVH::set_children(int who, int l, int r)
+{
+    assert((who >= 0 || who < nodes.size()) && "Node index out of bound");
+    nodes[who].l = l;
+    nodes[who].r = r;
+}
+
+int BVH::get_num_triangles() const
+{
+    return tri.size();
+}
+
+int BVH::get_num_nodes() const
+{
+    return nodes.size();
+}
+
+int BVH::partition(bool *pred, int begin, int end)
+{
+    assert(begin >= 0 && end < tri.size() && "Invalid partition range");
+
+    while (begin <= end)
+    {
+        if (!pred[begin])
+        {
+            const Triangle *t = tri[begin];
+            tri[begin] = tri[end];
+            tri[end] = t;
+
+            // Gotta swap that pred as well
+            bool p = pred[begin];
+            pred[begin] = pred[end];
+            pred[end] = p;
+
+            end--;
+        }
+        else
+        {
+            begin++;
+        }
+    }
+    return begin;
 }

@@ -75,7 +75,37 @@ function intersect_mt(ro, rd, tri, tmin, tmax)
 end
 
 function intersect_box(ro, rd, box)
-    return nil
+    local rdinv = vec3(1 / rd.x, 1 / rd.y, 1 / rd.z)
+    local tmin = -1e309
+    local tmax = 1e309
+
+    if rd.x ~= 0 then
+        local tx1 = (box.min.x - ro.x) * rdinv.x
+        local tx2 = (box.max.x - ro.x) * rdinv.x
+
+        tmin = math.max(tmin, math.min(tx1, tx2))
+        tmax = math.min(tmax, math.max(tx1, tx2))
+    end
+    if rd.y ~= 0 then
+        local ty1 = (box.min.y - ro.y) * rdinv.y
+        local ty2 = (box.max.y - ro.y) * rdinv.y
+
+        tmin = math.max(tmin, math.min(ty1, ty2))
+        tmax = math.min(tmax, math.max(ty1, ty2))
+    end
+    if rd.z ~= 0 then
+        local tz1 = (box.min.z - ro.z) * rdinv.z
+        local tz2 = (box.max.z - ro.z) * rdinv.z
+
+        tmin = math.max(tmin, math.min(tz1, tz2))
+        tmax = math.min(tmax, math.max(tz1, tz2))
+    end
+
+    if tmax >= tmin then
+        return tmin, tmax
+    else
+        return nil
+    end
 end
 
 intersect = intersect_mt

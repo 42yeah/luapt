@@ -80,3 +80,16 @@ Vec3C max3(const Vec3C &a, const Vec3C &b)
 {
     return Vec3C{ std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z) };
 }
+
+BBox bbox()
+{
+    float supermax = std::numeric_limits<float>::max();
+    float supermin = -std::numeric_limits<float>::max();
+    return BBox{ vec3(supermax, supermax, supermax), vec3(supermin, supermin, supermin) };
+}
+
+void enclose(BBox &bbox, const Vec3C &p)
+{
+    bbox.max = max3(bbox.max, p);
+    bbox.min = min3(bbox.min, p);
+}

@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
+#include "material.h"
 
 struct Vertex {
     glm::vec3 position;
@@ -61,6 +62,7 @@ private:
     int id_;
     bool initialized;
     std::vector<Triangle> tri;
+    std::vector<Material> mat;
     std::string load_warnings, load_errors;
 };
 

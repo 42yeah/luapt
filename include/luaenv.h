@@ -67,7 +67,7 @@ public:
     Resources() = default;
     ~Resources() = default;
 
-    std::vector<std::shared_ptr<Image> > images;
+    std::vector<std::shared_ptr<BaseImage> > images;
     std::vector<std::shared_ptr<Model> > models;
     std::vector<std::shared_ptr<BVH> > bvhs;
 
@@ -100,19 +100,34 @@ Resources *res(); // VERY shorthand function to get the Lua instance.
 extern "C"
 {
     // Images
-    Image *make_image(int width, int height);
-    void set_pixel(Image *img, int x, int y, float r, float g, float b);
-    bool save_image(Image *img, const char *path);
-    void free_image(Image *img);
+    U8Image *make_image(int width, int height);
+    void set_pixel(U8Image *img, int x, int y, float r, float g, float b);
+    bool save_image(U8Image *img, const char *path);
+    void free_image(U8Image *img);
+    void generate_demo_image(int w, int h, const char *path);
 
     // Models
-    Model *make_model(const char *path);
+    Model *make_model(const char *path, const char *mtl_base_path);
     int model_tri_count(const Model *model);
     TriC *model_get_tri(const Model *model, int index);
     void free_model(Model *model);
 
     // BVHs
     BVH *make_bvh(Model *model);
+    TriC *bvh_get_tri(const BVH *bvh, int index);
+    int bvh_tri_count(const BVH *bvh);
+    int bvh_push_node(BVH *bvh, const BBox &bbox, int start, int size, int l, int r);
+    const Node bvh_get_node(BVH *bvh, int index);
+    void bvh_node_set_children(BVH *bvh, int who, int l, int r);
+    int bvh_node_count(const BVH *bvh);
+    void free_bvh(BVH *bvh);
+
+    /**
+     * Returns an array of booleans. This will be used to partition the array.
+     * The partitioning array __will be freed__ upon calling `partition`.
+     */
+    bool *make_partitioning_table(BVH *bvh);
+    int partition(BVH *bvh, bool *table, int begin, int end);
 
     // Inventory
     void inventory_add(const char *k, void *v);
