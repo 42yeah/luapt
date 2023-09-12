@@ -190,25 +190,25 @@ void Resources::inventory_clear()
 
 
 // Images
-U8Image *make_image(int width, int height)
+FloatImage *make_image(int width, int height)
 {
     Resources *r = res();
-    std::shared_ptr<U8Image> img = std::make_shared<U8Image>(width, height, 4);
+    std::shared_ptr<FloatImage> img = std::make_shared<FloatImage>(width, height, 4);
     r->images.push_back(img);
     return img.get();
 }
 
-void set_pixel(U8Image *img, int x, int y, float r, float g, float b)
+void set_pixel(FloatImage *img, int x, int y, float r, float g, float b)
 {
-    img->set_rgb(x, y, float_to_u8(r), float_to_u8(g), float_to_u8(b));
+    img->set_rgb(x, y, RGB<float>(r, g, b));
 }
 
-bool save_image(U8Image *img, const char *path)
+bool save_image(FloatImage *img, const char *path)
 {
     return img->save(path);
 }
 
-void free_image(U8Image *img)
+void free_image(FloatImage *img)
 {
     Resources *r = res();
     auto it = std::find_if(r->images.begin(), r->images.end(), [&](const std::shared_ptr<BaseImage> im)

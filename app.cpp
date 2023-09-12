@@ -134,7 +134,7 @@ void App::render_frame()
     {
         // We are viewing an image. Sync that into our ImageGL, and pass that as uniform.
 
-        showing_image->import_from_image(*res()->images[viewing_image_idx]);
+        showing_image->import_from_image(res()->images[viewing_image_idx]);
         showing_image->bind();
         glActiveTexture(GL_TEXTURE0);
         glUniform1i((GLuint) image_viewing_shader->get_location("image"), 0);
@@ -213,6 +213,23 @@ void App::render_ui()
                 }
             }
             ImGui::EndListBox();
+        }
+
+        double xpos = 0.0, ypos = 0.0;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        ypos = h - ypos;
+        // Evaluate the transformed & aspect corrected UVs
+        float upos = (xpos / w) * 2.0f - 1.0f, vpos = (ypos / h) * 2.0f - 1.0f;
+        upos *= ((float) w / h);
+        upos = upos * 0.5f + 0.5f;
+        vpos = vpos * 0.5f + 0.5f;
+        if (showing_image->get_base_image())
+        {
+            RGB<float> rgb = showing_image->get_base_image()->sample_rgb(upos, vpos, SampleMethod::Repeat);
+            ImGui::Text("Current sample");
+            ImGui::Text("u %f, v %f", upos, vpos);
+            ImGui::Text("r %f, g %f, b %f", rgb.r, rgb.g, rgb.b);
+            ImGui::Text("r %d, g %d, b %d", (int) (rgb.r * 255.0f), (int) (rgb.g * 255.0f), (int) (rgb.b * 255.0f));
         }
     }
     ImGui::End();

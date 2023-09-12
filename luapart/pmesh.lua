@@ -3,8 +3,6 @@ require "lib/pervasives"
 require "lib/intersect"
 require "lib/bvh"
 
-generate_demo_image(255, 255, "test.png")
-
 inventory_clear()
 local model = make_model("spot.obj", "cornell")
 local bvh = make_bvh(model)

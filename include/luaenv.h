@@ -100,10 +100,10 @@ Resources *res(); // VERY shorthand function to get the Lua instance.
 extern "C"
 {
     // Images
-    U8Image *make_image(int width, int height);
-    void set_pixel(U8Image *img, int x, int y, float r, float g, float b);
-    bool save_image(U8Image *img, const char *path);
-    void free_image(U8Image *img);
+    FloatImage *make_image(int width, int height);
+    void set_pixel(FloatImage *img, int x, int y, float r, float g, float b);
+    bool save_image(FloatImage *img, const char *path);
+    void free_image(FloatImage *img);
     void generate_demo_image(int w, int h, const char *path);
 
     // Models

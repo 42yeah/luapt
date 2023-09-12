@@ -45,6 +45,7 @@ enum class SampleMethod
 class BaseImage
 {
 public:
+    virtual void set_rgb(int x, int y, const RGB<float> &rgb) = 0;
     virtual RGB<unsigned char> get_rgb(int x, int y) const = 0;
     virtual RGB<float> get_rgb_float(int x, int y) const = 0;
     virtual RGB<float> sample_rgb(float u, float v, SampleMethod method) const = 0;
@@ -107,31 +108,11 @@ public:
         return (y * w + x) * ch;
     }
 
-    void set_rgb(int x, int y, T r, T g, T b)
-    {
-        assert(initialized && "Image is not initialized");
+    virtual void set_rgb(int x, int y, const RGB<float> &rgb) override;
+    virtual RGB<unsigned char> get_rgb(int x, int y) const override;
+    virtual RGB<float> get_rgb_float(int x, int y) const override;
 
-        image[at(x, y) + 0] = r;
-        image[at(x, y) + 1] = g;
-        image[at(x, y) + 2] = b;
-
-        if (ch == 4)
-        {
-            image[at(x, y) + 3] = 255;
-        }
-    }
-
-    void set_rgb(int x, int y, const RGB<T> &rgb)
-    {
-        assert(initialized && "Image is not initialized");
-
-        set_rgb(x, y, rgb.r, rgb.g, rgb.b);
-    }
-
-    RGB<unsigned char> get_rgb(int x, int y) const override;
-    RGB<float> get_rgb_float(int x, int y) const override;
-
-    RGB<float> sample_rgb(float u, float v, SampleMethod method) const override
+    virtual RGB<float> sample_rgb(float u, float v, SampleMethod method) const override
     {
         switch (method)
         {

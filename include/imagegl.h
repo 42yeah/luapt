@@ -22,7 +22,7 @@ public:
 
     ImageGL(std::shared_ptr<BaseImage> image);
 
-    bool import_from_image(const BaseImage &image);
+    bool import_from_image(std::shared_ptr<BaseImage> image);
 
     const std::shared_ptr<BaseImage> get_base_image() const;
     void bind() const;

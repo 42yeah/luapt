@@ -73,7 +73,7 @@ bool U8Image::resize(int nx, int ny)
 }
 
 template<>
-RGB<unsigned char> Image<unsigned char>::get_rgb(int x, int y) const
+RGB<unsigned char> U8Image::get_rgb(int x, int y) const
 {
     assert(initialized && "Image is not initialized");
 
@@ -85,7 +85,7 @@ RGB<unsigned char> Image<unsigned char>::get_rgb(int x, int y) const
 }
 
 template<>
-RGB<float> Image<unsigned char>::get_rgb_float(int x, int y) const
+RGB<float> U8Image::get_rgb_float(int x, int y) const
 {
     assert(initialized && "Image is not initialized");
 
@@ -94,6 +94,21 @@ RGB<float> Image<unsigned char>::get_rgb_float(int x, int y) const
     ret.g = (float) image[at(x, y) + 1] / 255.0f;
     ret.b = (float) image[at(x, y) + 2] / 255.0f;
     return ret;
+}
+
+template<>
+void U8Image::set_rgb(int x, int y, const RGB<float> &rgb)
+{
+    assert(initialized && "Image is not initialized");
+
+    image[at(x, y) + 0] = float_to_u8(rgb.r);
+    image[at(x, y) + 1] = float_to_u8(rgb.g);
+    image[at(x, y) + 2] = float_to_u8(rgb.b);
+
+    if (ch == 4)
+    {
+        image[at(x, y) + 3] = 255;
+    }
 }
 
 unsigned char float_to_u8(float t)
@@ -119,7 +134,7 @@ std::shared_ptr<U8Image> generate_gradient_image(int w, int h)
         {
             float r = ((float) x / w);
             float g = ((float) y / h);
-            ret->set_rgb(x, y, float_to_u8(r), float_to_u8(g), 0);
+            ret->set_rgb(x, y, RGB<float>(r, g, 0));
         }
     }
     return ret;
@@ -208,4 +223,19 @@ bool FloatImage::save(const std::string &dest) const
     int res = stbi_write_png(dest.c_str(), w, h, ch, uc.get(), w * ch);
 
     return res != 0;
+}
+
+template<>
+void FloatImage::set_rgb(int x, int y, const RGB<float> &rgb)
+{
+    assert(initialized && "Image is not initialized");
+
+    image[at(x, y) + 0] = rgb.r;
+    image[at(x, y) + 1] = rgb.g;
+    image[at(x, y) + 2] = rgb.b;
+
+    if (ch == 4)
+    {
+        image[at(x, y) + 3] = 1.0f;
+    }
 }
