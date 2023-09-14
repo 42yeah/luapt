@@ -70,6 +70,7 @@ function bvh_construct(bvh, node_idx, start, fin)
 
     -- That's not very constructive.
     if best_offset == start or best_offset == fin + 1 then
+        print("Unconstructive")
         return
     end
 
@@ -107,4 +108,43 @@ function bvh_construct(bvh, node_idx, start, fin)
     -- Recurse into l and r ???
     bvh_construct(bvh, l, start, offset - 1)
     bvh_construct(bvh, r, offset, fin)
+end
+
+function bvh_hits(bvh, node_idx, ro, rd)
+    local n = bvh_get_node(bvh, node_idx)
+    if intersect_box(ro, rd, n.bbox) == nil then
+        return nil
+    end
+
+    local closest_tri = nil
+    local closest_uvt = nil
+
+    -- If hits, and is leave node, then we iterate over the triangles
+    -- Otherwise, we recurse into the leave node
+    if n.l == 0 and n.r == 0 then
+        for i = n.start, n.start + n.size - 1 do
+            local tri = bvh_get_tri(bvh, i)
+            local uvt = intersect(ro, rd, tri, 0.01, 100.0)
+
+            if uvt ~= nil then
+                if closest_uvt == nil or uvt.z < closest_uvt.z then
+                    closest_tri = tri
+                    closest_uvt = uvt
+                end
+            end
+        end
+    else
+        local tri_l, uvt_l = bvh_hits(bvh, n.l, ro, rd)
+        local tri_r, uvt_r = bvh_hits(bvh, n.r, ro, rd)
+        if uvt_l == nil then
+            return tri_r, uvt_r
+        elseif uvt_r == nil then
+            return tri_l, uvt_l
+        elseif uvt_l.z < uvt_r.z then
+            return tri_l, uvt_l
+        end
+        return tri_r, uvt_r
+    end
+
+    return closest_tri, closest_uvt
 end

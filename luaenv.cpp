@@ -6,6 +6,7 @@
 #include <cassert>
 #include <sstream>
 #include <algorithm>
+#include <random>
 #include <image.h>
 
 
@@ -130,6 +131,12 @@ void Lua::call_shade(const std::string &src, float u, float v, int x, int y, int
         err << "Failed to execute parallel script: " << lua_tostring(l, -1);
         res()->report_error(err.str());
     }
+}
+
+
+void Lua::random(lua_State *l)
+{
+
 }
 
 
@@ -362,3 +369,4 @@ HitInfo model_hit_info(Model *model, int material_id, Vec2C uv)
 {
     return model->get_hit_info(material_id, *((glm::vec2 *) &uv));
 }
+

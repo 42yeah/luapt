@@ -9,8 +9,8 @@ local bvh = make_bvh(model)
 
 bvh_construct(bvh, 0, 0, bvh_tri_count(bvh) - 1)
 
-local imw = 100
-local imh = 100
+local imw = 200
+local imh = 200
 local im = make_image(imw, imh)
 
 inventory_add("img", im)

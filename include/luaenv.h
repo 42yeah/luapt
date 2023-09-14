@@ -19,6 +19,7 @@ extern "C"
 #include <map>
 #include <functional>
 #include <mutex>
+#include <random>
 #include "image.h"
 #include "model.h"
 #include "luamath.h"
@@ -52,9 +53,13 @@ public:
     int execute_file(const std::string &file);
     void call_shade(const std::string &src, float u, float v, int x, int y, int w, int h);
 
+    static void random(lua_State *l);
+
 private:
     bool lua_ready;
     lua_State *l;
+    std::random_device dev;
+    std::uniform_real_distribution<float> distrib;
 };
 
 
