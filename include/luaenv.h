@@ -107,9 +107,12 @@ extern "C"
 {
     // Images
     FloatImage *make_image(int width, int height);
+    FloatImage *load_image(const char *path);
     void set_pixel(FloatImage *img, int x, int y, float r, float g, float b);
     bool save_image(FloatImage *img, const char *path);
     void free_image(FloatImage *img);
+    Vec3C get_pixel(FloatImage *img, int x, int y);
+    Vec3C sample_image(FloatImage *img, float u, float v);
     void generate_demo_image(int w, int h, const char *path);
 
     // Models

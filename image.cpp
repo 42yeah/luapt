@@ -146,26 +146,33 @@ bool FloatImage::load(const std::string &path)
 {
     stbi_set_flip_vertically_on_load(true);
 
-    unsigned char *data = stbi_load(path.c_str(), &w, &h, &ch, 0);
-    assert((ch == 3 || ch == 4) && "Unsupported number of channels");
+    int image_ch = 0;
+    unsigned char *data = stbi_load(path.c_str(), &w, &h, &image_ch, 0);
+    assert((image_ch == 3 || image_ch == 4) && "Unsupported number of channels");
 
     if (!data)
     {
         return false;
     }
 
-    image.reset(new float[w * h * 4]);
+    ch = 4; // Always reset it to 4
+    image.reset(new float[w * h * ch]);
 
     // Now we need to convert the untis
     for (int y = 0; y < h; y++)
     {
         for (int x = 0; x < w; x++)
         {
-            int offset_load = (y * w + x) * ch;
+            int offset_load = (y * w + x) * image_ch;
             RGB<unsigned char> color = { data[offset_load + 0], data[offset_load + 1], data[offset_load + 2] };
             image[at(x, y) + 0] = (float) color.r / 255.0f;
             image[at(x, y) + 1] = (float) color.g / 255.0f;
             image[at(x, y) + 2] = (float) color.b / 255.0f;
+
+            if (ch == 4)
+            {
+                image[at(x, y) + 3] = 1.0f;
+            }
         }
     }
 

@@ -81,6 +81,21 @@ Vec3C max3(const Vec3C &a, const Vec3C &b)
     return Vec3C{ std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z) };
 }
 
+Vec2C add2(const Vec2C &a, const Vec2C &b)
+{
+    return Vec2C{ a.u + b.u, a.v + b.v };
+}
+
+Vec2C scl2(const Vec2C &a, float s)
+{
+    return Vec2C{ s * a.u, s * a.v };
+}
+
+float dot2(const Vec2C &a, const Vec2C &b)
+{
+    return a.u * b.u + a.v * b.v;
+}
+
 BBox bbox()
 {
     float supermax = std::numeric_limits<float>::max();

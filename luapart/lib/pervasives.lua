@@ -8,6 +8,7 @@ ffi.cdef[[
     typedef struct Model Model;
     typedef struct BVH BVH;
 
+    // Defined in material.h
     typedef struct
     {
         float metallic;
@@ -19,11 +20,17 @@ ffi.cdef[[
         Vec3C specular;
     } HitInfo;
 
+    HitInfo hit_info();
+
+    // Defined in luaenv.h
     // Images
     Image *make_image(int width, int height);
+    Image *load_image(const char *path);
     void set_pixel(Image *img, int x, int y, float r, float g, float b);
     bool save_image(Image *img, const char *path);
     void free_image(Image *img);
+    Vec3C get_pixel(Image *img, int x, int y);
+    Vec3C sample_image(Image *img, float u, float v);
     void generate_demo_image(int w, int h, const char *path);
 
     // Models
@@ -70,10 +77,15 @@ ffi.cdef[[
     void debug();
 ]]
 
+hit_info = ffi.C.hit_info
+
 make_image = ffi.C.make_image
+load_image = ffi.C.load_image
 set_pixel = ffi.C.set_pixel
 save_image = ffi.C.save_image
 free_image = ffi.C.free_image
+get_pixel = ffi.C.get_pixel
+sample_image = ffi.C.sample_image
 generate_demo_image = ffi.C.generate_demo_image
 
 make_model = ffi.C.make_model
@@ -97,9 +109,8 @@ inventory_add = ffi.C.inventory_add
 inventory_get = ffi.C.inventory_get
 inventory_clear = ffi.C.inventory_clear
 
-shade = ffi.C.shade
-debug = ffi.C.debug
-
 -- pparams contains:
 -- x, y, u, v, w, h
+shade = ffi.C.shade
+debug = ffi.C.debug
 

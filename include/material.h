@@ -28,8 +28,9 @@ extern "C"
         Vec3C normal_bump;
         Vec3C specular;
     };
-}
 
+    HitInfo hit_info();
+}
 
 /**
  * Material describes what the "material" is. It encloses textures and other things as well.

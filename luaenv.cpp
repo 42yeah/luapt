@@ -217,6 +217,21 @@ FloatImage *make_image(int width, int height)
     return img.get();
 }
 
+FloatImage *load_image(const char *path)
+{
+    Resources *r = res();
+    std::shared_ptr<FloatImage> img = std::make_shared<FloatImage>(0, 0, 3);
+    if (!img->load(path))
+    {
+        std::stringstream ss;
+        ss << "Cannot load image: " << path << " (returning nil)";
+        r->report_error(ss.str());
+        return nullptr;
+    }
+    r->images.push_back(img);
+    return img.get();
+}
+
 void set_pixel(FloatImage *img, int x, int y, float r, float g, float b)
 {
     img->set_rgb(x, y, RGB<float>(r, g, b));
@@ -236,6 +251,19 @@ void free_image(FloatImage *img)
     });
     assert(it != r->images.end() && "Non-existent image");
     r->images.erase(it, it + 1); // WARNING: img now becomes a dangling pointer
+}
+
+Vec3C get_pixel(FloatImage *img, int x, int y)
+{
+    RGB<float> rgb = img->get_rgb_float(x, y);
+    return { rgb.r, rgb.g, rgb.b };
+}
+
+Vec3C sample_image(FloatImage *img, float u, float v)
+{
+    // One of these days...
+    RGB<float> rgb = img->sample_rgb(u, v, SampleMethod::Repeat);
+    return { rgb.r, rgb.g, rgb.b };
 }
 
 

@@ -7,6 +7,13 @@
 
 int material_id_counter = 0;
 
+HitInfo hit_info()
+{
+    return HitInfo{
+        0.0f, 1.0f, vec3(0.0f, 0.0f, 0.0f), vec3(0.1f, 0.0f, 0.1f), vec3(1.0f, 0.0f, 1.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f)
+    };
+}
+
 Material::Material() : material_name("boring"), metallic(0), metallic_tex(nullptr), ior(1.0f), emission(RGB<float>(0.0f, 0.0f, 0.0f)), emissive_tex(nullptr), ambient(RGB<float>(0.1f, 0.0f, 0.1f)), ambient_tex(nullptr), diffuse({ 1.0f, 0.0f, 1.0f }), diffuse_tex(nullptr), normal_tex(nullptr), specular(RGB<float>(0.0f, 0.0f, 0.0f)), specular_tex(nullptr), id_(material_id_counter++)
 {
 

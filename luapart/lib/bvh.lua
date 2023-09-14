@@ -22,17 +22,13 @@ function determine_area_ratio(poff, span, axis)
 end
 
 function bvh_construct(bvh, node_idx, start, fin)
-    print("Recursing into ", start, fin)
     if fin - start + 1 <= 8 then
         -- No need to make BVH; not a lot of triangles here
-        print("Unconstructive: not a lot of triangles")
         return
     end
 
     local n = bvh_get_node(bvh, node_idx)
     local span = sub3(n.bbox.max, n.bbox.min)
-
-    print("Bounding box:", vstr(n.bbox.min), vstr(n.bbox.max))
 
     -- split them into 8 buckets
     local num_buckets = 8
@@ -62,9 +58,8 @@ function bvh_construct(bvh, node_idx, start, fin)
 
             -- 2. Calculate SAH. Record the best one.
             local left, right = determine_area_ratio(poff, span, axis)
-            local sah = 1 + 2 * left * (offset - start) ^ 2 + 2 * right * (fin - offset + 1) ^ 2
+            local sah = 1 + 2 * left * ((offset - start) / (fin - start + 1)) ^ 2 + 2 * right * ((fin - offset + 1) / (fin - start + 1)) ^ 2
 
-            print("SAH along", axis, " with step ", step, " is: ", sah, " (offset", offset, ")")
             if sah < best_sah then
                 best_sah = sah
                 best_step = step
@@ -74,23 +69,8 @@ function bvh_construct(bvh, node_idx, start, fin)
         end
     end
 
-    print("My best SAH is " .. best_sah .. " in axis " .. best_axis .. " and offset " .. best_offset .. ", step is " .. best_step)
-    print("THat step means partitioning " .. vstr(scl3(split_step, best_step)))
-
     -- That's not very constructive.
     if best_offset == start or best_offset == fin + 1 then
-        print("Unconstructive: best partition is no partition")
-
-        local bb = bbox()
-        for i = start, fin do
-            local tri = bvh_get_tri(bvh, i)
-
-            enclose(bb, tri.a.position)
-            enclose(bb, tri.b.position)
-            enclose(bb, tri.c.position)
-        end
-        print("BBox: ", vstr(bb.min), vstr(bb.max))
-        print("WAIT A MINUTE:", vstr(n.bbox.min), vstr(n.bbox.max))
         return
     end
 
@@ -124,8 +104,6 @@ function bvh_construct(bvh, node_idx, start, fin)
     local l = bvh_push_node(bvh, left_box, start, offset - start, 0, 0)
     local r = bvh_push_node(bvh, right_box, offset, fin - offset + 1, 0, 0)
     bvh_node_set_children(bvh, node_idx, l, r)
-
-    print("Creating branch l(" .. start .. "," .. (offset - start) .. "), r(" .. offset .. "," .. (fin - offset + 1) .. ")")
 
     -- Recurse into l and r ???
     bvh_construct(bvh, l, start, offset - 1)

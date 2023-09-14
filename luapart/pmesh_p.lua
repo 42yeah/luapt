@@ -16,9 +16,16 @@ function trace(bvh, model, ro, rd)
     local n_bary = add3(add3(scl3(tri.b.normal, uvt.x), scl3(tri.c.normal, uvt.y)), scl3(tri.a.normal, w))
     local p = add3(add3(ro, scl3(rd, uvt.z)), scl3(n_bary, 0.01))
     -- TODO: uv should be interpolated here
-    local info = model_hit_info(model, tri.a.material_id, vec2(0.0, 0.0))
+    local uv_bary = add2(add2(scl2(tri.b.tex_coord, uvt.x), scl2(tri.c.tex_coord, uvt.y)), scl2(tri.a.tex_coord, w))
 
-    return tri, uvt, p, n_bary, info
+    local info = nil
+    if tri.a.material_id >= 0 then
+        info = model_hit_info(model, tri.a.material_id, vec2(0.0, 0.0))
+    else
+        info = hit_info()
+    end
+
+    return tri, uvt, p, n_bary, uv_bary, info
 end
 
 function generate_ray(nor)
@@ -37,9 +44,10 @@ end
 local im = inventory_get("img")
 local model = inventory_get("model")
 local bvh = inventory_get("bvh")
+local spot = inventory_get("spot")
 
 local uv = vec2(pparams.u * 2.0 - 1.0, pparams.v * 2.0 - 1.0)
-local ro = vec3(0.1, 0.6, 3)
+local ro = vec3(0.6, 0.6, -1.0)
 local center = vec3(0, 0.5, 0)
 local front = nor3(sub3(center, ro))
 local right = nor3(cross(front, vec3(0, 1, 0)))
@@ -48,7 +56,7 @@ local up = nor3(cross(right, front))
 local rd = nor3(add3(add3(scl3(right, uv.u), scl3(up, uv.v)), scl3(front, 1)))
 
 local light_dir = nor3(vec3(1, 1, 1))
-local tri, uvt, p, nor, info = trace(bvh, model, ro, rd)
+local tri, uvt, p, nor, tc, info = trace(bvh, model, ro, rd)
 
 if tri ~= nil then
     if len3(info.emission) ~= 0 then
@@ -58,14 +66,16 @@ if tri ~= nil then
 
     local total = info.ambient
 
-    if len3(info.diffuse) < 0.1 then
-        info.diffuse = info.specular
-    end
+    info.diffuse = sample_image(spot, tc.u, tc.v)
 
-    for i = 1, 5 do
+--     if len3(info.diffuse) < 0.1 then
+--         info.diffuse = info.specular
+--     end
+
+    for i = 1, 100 do
         -- Generate 5 random rays, try to hit the light source
         local r = generate_ray(nor)
-        local tri_a, uvt_a, p_a, nor_a, info_a = trace(bvh, model, p, r)
+        local tri_a, uvt_a, p_a, nor_a, tc_a, info_a = trace(bvh, model, p, r)
 
         -- If it's not an emissive object, we estimate its brightness (phong.)
         if tri_a == nil then
@@ -73,9 +83,10 @@ if tri ~= nil then
                 emission = get_sky(r)
             }
         else
-            if len3(info_a.diffuse) < 0.1 then
-                info_a.diffuse = info_a.specular
-            end
+--             if len3(info_a.diffuse) < 0.1 then
+--                 info_a.diffuse = info_a.specular
+--             end
+            info_a.diffuse = sample_image(spot, tc_a.u, tc_a.v)
             info_a = {
                 emission = scl3(info_a.diffuse, math.max(0, dot3(nor_a, vec3(0, 1, 0))))
             }
@@ -83,7 +94,10 @@ if tri ~= nil then
         total = add3(scl3(mul3(info_a.emission, info.diffuse), math.max(0.0, dot3(r, nor))), total)
     end
 
-    local color = scl3(total, 1 / 2)
+    local color = scl3(total, 1 / 100)
+    color.x = color.x ^ (1 / 2.2)
+    color.y = color.y ^ (1 / 2.2)
+    color.z = color.z ^ (1 / 2.2)
 
     set_pixel(im, pparams.x, pparams.y, color.x, color.y, color.z)
 else

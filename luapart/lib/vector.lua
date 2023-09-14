@@ -46,6 +46,9 @@ ffi.cdef[[
     Vec3C mix3(const Vec3C &a, const Vec3C &b, float val);
     Vec3C min3(const Vec3C &a, const Vec3C &b);
     Vec3C max3(const Vec3C &a, const Vec3C &b);
+    Vec2C add2(const Vec2C &a, const Vec2C &b);
+    Vec2C scl2(const Vec2C &a, float s);
+    float dot2(const Vec2C &a, const Vec2C &b);
 
     // Boring BBox definition
     typedef struct
@@ -77,6 +80,9 @@ mix = ffi.C.mix
 mix3 = ffi.C.mix3
 min3 = ffi.C.min3
 max3 = ffi.C.max3
+add2 = ffi.C.add2
+scl2 = ffi.C.scl2
+dot2 = ffi.C.dot2
 bbox = ffi.C.bbox
 enclose = ffi.C.enclose
 

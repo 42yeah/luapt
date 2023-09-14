@@ -4,10 +4,12 @@ require "lib/intersect"
 require "lib/bvh"
 
 inventory_clear()
-local model = make_model("cornell/CornellBox-Sphere.obj", "cornell")
+local model = make_model("spot.obj", "cornell")
 local bvh = make_bvh(model)
 
-print("===")
+-- Force a spot texture?
+local spot = load_image("spot_texture.png")
+
 bvh_construct(bvh, 0, 0, bvh_tri_count(bvh) - 1)
 
 local imw = 200
@@ -17,7 +19,8 @@ local im = make_image(imw, imh)
 inventory_add("img", im)
 inventory_add("model", model)
 inventory_add("bvh", bvh)
+inventory_add("spot", spot)
 
--- shade(imw, imh, "pmesh_p.lua")
+shade(imw, imh, "pmesh_p.lua")
 
--- save_image(im, "suzanne.png")
+save_image(im, "suzanne.png")

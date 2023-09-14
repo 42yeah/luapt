@@ -52,6 +52,9 @@ extern "C"
     Vec3C mix3(const Vec3C &a, const Vec3C &b, float val);
     Vec3C min3(const Vec3C &a, const Vec3C &b);
     Vec3C max3(const Vec3C &a, const Vec3C &b);
+    Vec2C add2(const Vec2C &a, const Vec2C &b);
+    Vec2C scl2(const Vec2C &a, float s);
+    float dot2(const Vec2C &a, const Vec2C &b);
 
     // Boring BBox definition
     typedef struct
