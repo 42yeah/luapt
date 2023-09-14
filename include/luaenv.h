@@ -53,7 +53,8 @@ public:
     int execute_file(const std::string &file);
     void call_shade(const std::string &src, float u, float v, int x, int y, int w, int h);
 
-    static void random(lua_State *l);
+    static Lua *get_self(lua_State *l);
+    static int whatever(lua_State *l);
 
 private:
     bool lua_ready;

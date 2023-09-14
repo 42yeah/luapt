@@ -7,6 +7,7 @@ inventory_clear()
 local model = make_model("cornell/CornellBox-Sphere.obj", "cornell")
 local bvh = make_bvh(model)
 
+print("===")
 bvh_construct(bvh, 0, 0, bvh_tri_count(bvh) - 1)
 
 local imw = 200
@@ -17,6 +18,6 @@ inventory_add("img", im)
 inventory_add("model", model)
 inventory_add("bvh", bvh)
 
-shade(imw, imh, "pmesh_p.lua")
+-- shade(imw, imh, "pmesh_p.lua")
 
-save_image(im, "suzanne.png")
+-- save_image(im, "suzanne.png")

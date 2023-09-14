@@ -18,6 +18,8 @@ Lua::Lua() : lua_ready(false), l(nullptr)
     lua_pushlightuserdata(l, this);
     lua_setglobal(l, "luaenv");
 
+    lua_register(l, "whatever", Lua::whatever);
+
     if (l)
     {
         lua_ready = true;
@@ -133,10 +135,20 @@ void Lua::call_shade(const std::string &src, float u, float v, int x, int y, int
     }
 }
 
-
-void Lua::random(lua_State *l)
+Lua *Lua::get_self(lua_State *l)
 {
+    lua_getglobal(l, "luaenv");
+    Lua *self = (Lua *) (lua_touserdata(l, -1));
+    assert(self != nullptr && "luaenv not found");
+    lua_pop(l, 1);
+    return self;
+}
 
+int Lua::whatever(lua_State *l)
+{
+    Lua *lua = get_self(l);
+    lua_pushnumber(l, lua->distrib(lua->dev));
+    return 1;
 }
 
 

@@ -99,7 +99,6 @@ inventory_clear = ffi.C.inventory_clear
 
 shade = ffi.C.shade
 debug = ffi.C.debug
-whatever = ffi.C.whatever
 
 -- pparams contains:
 -- x, y, u, v, w, h
