@@ -76,22 +76,6 @@ void generate_demo_image(int w, int h, const char *path)
     img->save(path);
 }
 
-void Resources::report_error(const std::string &msg)
-{
-    if (msg.empty())
-    {
-        return;
-    }
-
-    std::lock_guard<std::mutex> lk(mu);
-    if (err_log.size() > MAX_ERR_LOG_SIZE)
-    {
-        // Ditch the NEW error log
-        return;
-    }
-    err_log.push_back(msg + "##err" + std::to_string(err_log.size()));
-    std::cout << "ERROR: " << msg << std::endl;
-}
 
 void Lua::call_shade(const std::string &src, float u, float v, int x, int y, int w, int h)
 {
@@ -149,62 +133,6 @@ int Lua::whatever(lua_State *l)
     Lua *lua = get_self(l);
     lua_pushnumber(l, lua->distrib(lua->dev));
     return 1;
-}
-
-
-// FFI Implementations
-std::shared_ptr<Resources> res_instance = nullptr;
-
-Resources *res()
-{
-    if (!res_instance)
-    {
-        res_instance = std::make_shared<Resources>();
-    }
-    return res_instance.get();
-}
-
-
-std::vector<std::string>::const_iterator Resources::err_begin() const
-{
-    return err_log.begin();
-}
-
-std::vector<std::string>::const_iterator Resources::err_end() const
-{
-    return err_log.end();
-}
-
-void Resources::clear_error()
-{
-    std::lock_guard<std::mutex> lk(mu);
-    err_log.clear();
-}
-
-void Resources::inventory_add(const std::string &key, void *what)
-{
-    std::lock_guard<std::mutex> lk(mu);
-    inventory[key] = what;
-}
-
-void *Resources::inventory_get(const std::string &key)
-{
-    std::lock_guard<std::mutex> lk(mu);
-    auto pos = inventory.find(key);
-    if (pos == inventory.end())
-    {
-        std::stringstream ss;
-        ss << "Nonexistent inventory key: " << key;
-        res()->err_log.push_back(ss.str());
-        return nullptr;
-    }
-    return pos->second;
-}
-
-void Resources::inventory_clear()
-{
-    std::lock_guard<std::mutex> lk(mu);
-    inventory.clear();
 }
 
 
@@ -335,6 +263,17 @@ int bvh_tri_count(const BVH *bvh)
     return bvh->get_num_triangles();
 }
 
+TriC *bvh_get_emitter(const BVH *bvh, int index)
+{
+    assert(index >= 0 && index < bvh->get_num_emitters() && "BVH emitter index out of bounds");
+    return (TriC *) &bvh->get_emitter(index);
+}
+
+int bvh_emitter_count(const BVH *bvh)
+{
+    return bvh->get_num_emitters();
+}
+
 int bvh_push_node(BVH *bvh, const BBox &bbox, int start, int size, int l, int r)
 {
     return bvh->make_node(bbox, start, size, l, r);
@@ -397,6 +336,23 @@ void *inventory_get(const char *k)
 void inventory_clear()
 {
     res()->inventory_clear();
+}
+
+void shared_add(const char *k, const char *serialized, int size)
+{
+    char *mem = new char[size];
+    std::memcpy(mem, serialized, size);
+    res()->shared_add(k, { mem, size });
+}
+
+const SharedInfo *shared_get(const char *k)
+{
+    return res()->shared_get(k);
+}
+
+void shared_clear()
+{
+    res()->shared_clear();
 }
 
 void debug()

@@ -89,7 +89,7 @@ bool Model::load(const std::string& path, const std::string &mtl_base_dir)
 
     for (int i = 0; i < materials.size(); i++)
     {
-        Material m(materials[i]);
+        Material m(materials[i], mtl_base_dir);
         mat.push_back(m);
     }
 

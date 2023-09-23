@@ -57,6 +57,7 @@ private:
     void launch_new_thread();
     void queue_single_job(const Job &job);
     void queue_batch_job(int w, int h, const std::string &path, bool wait_until_finish);
+    void update_framebuffer_size();
 
     /**
      * @returns if a batch job is launched at the moment.
@@ -85,6 +86,7 @@ private:
     char code_injection[MAX_INPUT_CHAR_LENGTH];
     std::vector<std::string> previous_scripts;
     int viewing_image_idx, viewing_model_idx, viewing_bvh_idx;
+    bool is_wayland;
 
     // Misc resources
     std::shared_ptr<ModelGL> display_rect; // The display rectangle used to show images

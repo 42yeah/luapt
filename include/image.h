@@ -99,8 +99,6 @@ public:
 
     int at(int x, int y) const
     {
-        assert(initialized && "Image is not initialized");
-
         if (x < 0) { x = 0; }
         if (y < 0) { y = 0; }
         if (x >= w) { x = w - 1; }

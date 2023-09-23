@@ -21,7 +21,18 @@ BVH::BVH(std::shared_ptr<Model> model) : model(model), id_(bvh_id_counter++)
         enclose(root_bbox, t->a.position);
         enclose(root_bbox, t->b.position);
         enclose(root_bbox, t->c.position);
-        tri.push_back(&model->get_triangle(i));
+
+        const Triangle *triangle = &model->get_triangle(i);
+        tri.push_back(triangle);
+
+        if (t->a.material_id >= 0 && len3(model->get_hit_info(t->a.material_id, glm::vec2(0.5f, 0.5f)).emission) > 0.0f)
+        {
+            emitters.push_back(triangle);
+        }
+        if (t->a.material_id < 0)
+        {
+            emitters.push_back(triangle);
+        }
     }
 
     make_node(root_bbox, 0, tri.size(), 0, 0);
@@ -62,6 +73,18 @@ void BVH::set_children(int who, int l, int r)
 int BVH::get_num_triangles() const
 {
     return tri.size();
+}
+
+const Triangle &BVH::get_emitter(int index) const
+{
+    assert((index >= 0 || index < emitters.size()) && "Emitter index out of bound");
+
+    return *emitters[index];
+}
+
+int BVH::get_num_emitters() const
+{
+    return emitters.size();
 }
 
 int BVH::get_num_nodes() const

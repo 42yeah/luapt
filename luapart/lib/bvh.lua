@@ -124,7 +124,7 @@ function bvh_hits(bvh, node_idx, ro, rd)
     if n.l == 0 and n.r == 0 then
         for i = n.start, n.start + n.size - 1 do
             local tri = bvh_get_tri(bvh, i)
-            local uvt = intersect(ro, rd, tri, 0.01, 100.0)
+            local uvt = intersect(ro, rd, tri, 1.0, 2000.0)
 
             if uvt ~= nil then
                 if closest_uvt == nil or uvt.z < closest_uvt.z then
@@ -147,4 +147,32 @@ function bvh_hits(bvh, node_idx, ro, rd)
     end
 
     return closest_tri, closest_uvt
+end
+
+function trace(bvh, model, ro, rd)
+    local tri, uvt = bvh_hits(bvh, 0, ro, rd)
+    if uvt == nil then
+        return nil
+    end
+    local w = 1 - uvt.x - uvt.y
+    local n_bary = add3(add3(scl3(tri.b.normal, uvt.x), scl3(tri.c.normal, uvt.y)), scl3(tri.a.normal, w))
+    local p = add3(add3(ro, scl3(rd, uvt.z)), scl3(n_bary, 0.01))
+    local uv_bary = add2(add2(scl2(tri.b.tex_coord, uvt.x), scl2(tri.c.tex_coord, uvt.y)), scl2(tri.a.tex_coord, w))
+
+    local info = nil
+    if tri.a.material_id >= 0 then
+        info = model_hit_info(model, tri.a.material_id, vec2(0.0, 0.0))
+    else
+        info = hit_info()
+        info.emission = vec3(10.0, 10.0, 10.0)
+    end
+
+    return {
+        tri = tri,
+        uvt = uvt,
+        position = p,
+        normal = n_bary,
+        tex_coord = uv_bary,
+        info = info
+    }
 end

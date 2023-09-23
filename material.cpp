@@ -19,15 +19,24 @@ Material::Material() : material_name("boring"), metallic(0), metallic_tex(nullpt
 
 }
 
-Material::Material(const tinyobj::material_t &mat) : Material()
+Material::Material(const tinyobj::material_t &mat, std::string mtl_base_dir) : Material()
 {
+    if (mtl_base_dir.empty())
+    {
+        mtl_base_dir = "./";
+    }
+    else if (mtl_base_dir[mtl_base_dir.size() - 1] != '/')
+    {
+        mtl_base_dir += "/";
+    }
+
     Resources *r = res();
     material_name = mat.name;
     metallic = mat.metallic;
     if (!mat.metallic_texname.empty())
     {
         metallic_tex = std::make_shared<U8Image>();
-        metallic_tex->load(mat.metallic_texname); // TODO: issues might arise in the future (path)
+        metallic_tex->load(mtl_base_dir + mat.metallic_texname); // TODO: issues might arise in the future (path)
         r->images.push_back(metallic_tex);
     }
     ior = mat.ior;
@@ -35,34 +44,34 @@ Material::Material(const tinyobj::material_t &mat) : Material()
     if (!mat.emissive_texname.empty())
     {
         emissive_tex = std::make_shared<U8Image>();
-        emissive_tex->load(mat.emissive_texname);
+        emissive_tex->load(mtl_base_dir + mat.emissive_texname);
         r->images.push_back(emissive_tex);
     }
     ambient = RGB<float>(mat.ambient[0], mat.ambient[1], mat.ambient[2]);
     if (!mat.ambient_texname.empty())
     {
         ambient_tex = std::make_shared<U8Image>();
-        ambient_tex->load(mat.ambient_texname);
+        ambient_tex->load(mtl_base_dir + mat.ambient_texname);
         r->images.push_back(ambient_tex);
     }
     diffuse = RGB<float>(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
     if (!mat.diffuse_texname.empty())
     {
         diffuse_tex = std::make_shared<U8Image>();
-        diffuse_tex->load(mat.diffuse_texname);
+        diffuse_tex->load(mtl_base_dir + mat.diffuse_texname);
         r->images.push_back(diffuse_tex);
     }
     if (!mat.normal_texname.empty())
     {
         normal_tex = std::make_shared<U8Image>();
-        normal_tex->load(mat.normal_texname);
+        normal_tex->load(mtl_base_dir + mat.normal_texname);
         r->images.push_back(normal_tex);
     }
     specular = RGB<float>(mat.specular[0], mat.specular[1], mat.specular[2]);
     if (!mat.specular_texname.empty())
     {
         specular_tex = std::make_shared<U8Image>();
-        specular_tex->load(mat.specular_texname);
+        specular_tex->load(mtl_base_dir + mat.specular_texname);
         r->images.push_back(specular_tex);
     }
 }

@@ -29,6 +29,9 @@ public:
     const Triangle &get_triangle(int index) const;
     int get_num_triangles() const;
 
+    const Triangle &get_emitter(int index) const;
+    int get_num_emitters() const;
+
     /**
      * Partition the table based on preds.
      * If it is true, then it comes to the left side.
@@ -38,6 +41,7 @@ public:
 
 private:
     std::vector<const Triangle *> tri; // We will need to rearrange these triangles
+    std::vector<const Triangle *> emitters; // During the iteration, we will meet emitters
     std::vector<Node> nodes;
     std::shared_ptr<Model> model;
 

@@ -47,7 +47,7 @@ public:
     /**
      * Support for direct importation from tinyobj
      */
-    Material(const tinyobj::material_t &mat);
+    Material(const tinyobj::material_t &mat, std::string mtl_base_dir);
 
     /**
      * Copy constructor

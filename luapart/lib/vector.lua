@@ -86,6 +86,11 @@ dot2 = ffi.C.dot2
 bbox = ffi.C.bbox
 enclose = ffi.C.enclose
 
+function reflect(r, nor)
+    local proj = scl3(nor, dot3(nor, r))
+    return nor3(sub3(sub3(r, proj), proj))
+end
+
 function vstr(vec3)
     return "("..vec3.x..", "..vec3.y..", "..vec3.z..")"
 end

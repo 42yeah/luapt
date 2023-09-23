@@ -2,6 +2,7 @@
 
 ffi = require "ffi"
 require "lib/vector"
+local buffer = require "string.buffer"
 
 ffi.cdef[[
     typedef struct Image Image;
@@ -44,6 +45,8 @@ ffi.cdef[[
     BVH *make_bvh(Model *model);
     TriC *bvh_get_tri(const BVH *bvh, int index);
     int bvh_tri_count(const BVH *bvh);
+    TriC *bvh_get_emitter(const BVH *bvh, int index);
+    int bvh_emitter_count(const BVH *bvh);
     int bvh_push_node(BVH *bvh, const BBox &bbox, int start, int size, int l, int r);
     const Node bvh_get_node(BVH *bvh, int index);
     void bvh_node_set_children(BVH *bvh, int who, int l, int r);
@@ -61,6 +64,17 @@ ffi.cdef[[
     void inventory_add(const char *k, void *v);
     void *inventory_get(const char *k);
     void inventory_clear();
+
+    // Shared strings
+
+    typedef struct
+    {
+        char *serialized;
+        int size;
+    } SharedInfo;
+    void shared_add(const char *k, const char *serialized, int size);
+    const SharedInfo *shared_get(const char *k);
+    void shared_clear();
 
     /**
      * Shade function launches a bunch of threads (width*height).
@@ -97,6 +111,8 @@ model_hit_info = ffi.C.model_hit_info
 make_bvh = ffi.C.make_bvh
 bvh_get_tri = ffi.C.bvh_get_tri
 bvh_tri_count = ffi.C.bvh_tri_count
+bvh_get_emitter = ffi.C.bvh_get_emitter
+bvh_emitter_count = ffi.C.bvh_emitter_count
 bvh_push_node = ffi.C.bvh_push_node
 bvh_get_node = ffi.C.bvh_get_node
 bvh_node_set_children = ffi.C.bvh_node_set_children
@@ -108,6 +124,22 @@ partition = ffi.C.partition
 inventory_add = ffi.C.inventory_add
 inventory_get = ffi.C.inventory_get
 inventory_clear = ffi.C.inventory_clear
+
+function shared_add(key, table)
+    local str = buffer.encode(table)
+    ffi.C.shared_add(key, str, #str)
+end
+
+function shared_get(key)
+    local info = ffi.C.shared_get(key)
+    if info == nil then
+        return nil
+    end
+    local str = ffi.string(info.serialized, info.size)
+    return buffer.decode(str)
+end
+
+shared_clear = ffi.C.shared_clear
 
 -- pparams contains:
 -- x, y, u, v, w, h

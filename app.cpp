@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstring>
 #include <sstream>
+#include <cstdlib>
 #include <imgui.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
@@ -14,14 +15,14 @@
 
 int thread_id_counter = 0;
 
-App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), done_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), viewing_image_idx(-1), viewing_model_idx(-1), viewing_bvh_idx(-1), display_rect(nullptr), image_viewing_shader(nullptr), showing_image(nullptr), lua(std::make_shared<Lua>())
+App::App(GLFWwindow *window) : window(window), w(0), h(0), initialized(false), alive(true), batch_job_count(0), done_job_count(0), ui_show_resources(false), ui_show_lua(false), current_script_path(""), code_injection(""), viewing_image_idx(-1), viewing_model_idx(-1), viewing_bvh_idx(-1), is_wayland(false), display_rect(nullptr), image_viewing_shader(nullptr), showing_image(nullptr), lua(std::make_shared<Lua>())
 {
 
 }
 
 bool App::init()
 {
-    glfwGetFramebufferSize(window, &w, &h);
+    update_framebuffer_size();
 
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
@@ -38,6 +39,13 @@ bool App::init()
     {
         std::cerr << "Cannot initialize ImGui OpenGL3 backend." << std::endl;
         return false;
+    }
+
+    // Determine if we are using Wayland + GPU. This will have the mysterious effect of doubling the size of the framebuffer.
+    const char *disp = std::getenv("WAYLAND_DISPLAY");
+    if (disp)
+    {
+        is_wayland = true;
     }
 
     // Initialize the display rectangle.
@@ -151,8 +159,15 @@ void App::render_frame()
 
 void App::render_ui()
 {
-    glfwGetFramebufferSize(window, &w, &h);
-    glViewport(0, 0, w, h);
+    update_framebuffer_size();
+    if (is_wayland)
+    {
+        glViewport(0, 0, 2 * w, 2 * h);
+    }
+    else
+    {
+        glViewport(0, 0, w, h);
+    }
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -321,7 +336,7 @@ void App::render_ui()
             }
             ImGui::EndTable();
         }
-        if (ImGui::Button("Wipe worker Lua states") && !busy)
+        if (ImGui::Button("Wipe states") && !busy)
         {
             lua = std::make_shared<Lua>();
             for (int i = 0; i < worker_stats.size(); i++)
@@ -333,6 +348,9 @@ void App::render_ui()
             std::lock_guard<std::mutex> lk(mu);
             batch_job_count = worker_stats.size();
             done_job_count = 0;
+
+            res()->inventory_clear();
+            res()->shared_clear();
         }
         if (ImGui::Button("Abort"))
         {
@@ -498,7 +516,7 @@ void App::queue_batch_job(int w, int h, const std::string &path, bool wait_until
 {
     {
         std::lock_guard<std::mutex> lk(mu);
-        batch_job_count += w * h;
+        batch_job_count = w * h + 1;
         done_job_count = 0;
 
         // Read the source code.
@@ -535,6 +553,18 @@ void App::queue_batch_job(int w, int h, const std::string &path, bool wait_until
         {
             return !alive || (batch_job_count <= done_job_count + 1);
         });
+    }
+}
+
+void App::update_framebuffer_size()
+{
+    if (is_wayland)
+    {
+        glfwGetWindowSize(window, &w, &h);
+    }
+    else
+    {
+        glfwGetFramebufferSize(window, &w, &h);
     }
 }
 
